@@ -1,0 +1,14 @@
+[package]
+name = "sajit"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+memmap2 = "0.9"
+
+[target.'cfg(all(target_os="linux", not(target_arch = "x86_64")))'.dependencies]
+clear-cache = "0.1"
+
+[dev-dependencies]
+cranelift = { version = "0.128", features = ["module", "native"] }
+target-lexicon = "0.13"
