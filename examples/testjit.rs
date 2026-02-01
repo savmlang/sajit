@@ -108,12 +108,14 @@ fn jit(data: &[u8], reloc: Vec<Relocation>) {
 
     let code = MemoryExecutable::new(&data, &reloc).unwrap();
 
-    let e: extern "C" fn(i32, i32) -> i32 = transmute(code.entry_ptr());
+    let e: extern "C" fn(i64, i64) -> i64 = transmute(code.entry_ptr());
 
     println!("{}", e(10, 20));
+    assert_eq!(e(10, 20), 10);
   }
 }
 
 extern "C" fn myfn(a: i64) {
   println!("Hi, {a}");
+  assert_eq!(a, 20);
 }
