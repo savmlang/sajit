@@ -35,7 +35,10 @@ pub struct MemoryExecutable {
 }
 
 impl MemoryExecutable {
-  pub fn new(machinecode: &[u8], reloc: &[Relocation]) -> Result<Self, Box<dyn std::error::Error>> {
+  pub unsafe fn new(
+    machinecode: &[u8],
+    reloc: &[Relocation],
+  ) -> Result<Self, Box<dyn std::error::Error>> {
     let mut mmaput = MmapOptions::new().len(machinecode.len()).map_anon()?;
     mmaput.copy_from_slice(machinecode);
 
@@ -66,8 +69,6 @@ impl MemoryExecutable {
 
 #[inline(always)]
 unsafe fn relocate(mmap: &mut MmapMut, relocation: &Relocation) {
-  println!("Found start: {}", mmap.as_ptr() as usize);
-
   let patch_site = unsafe { (mmap.as_mut_ptr() as *mut u8).add(relocation.offset as _) };
 
   let value = (relocation.symbol_addr as i128 + relocation.addend as i128) as u64;
@@ -90,6 +91,10 @@ unsafe fn relocate(mmap: &mut MmapMut, relocation: &Relocation) {
 
       let displacement_32 = displacement as i32;
       unsafe {
+        // SAFETY:
+        // x86_64 CPUs tolerate unaligned access, so this is okay even if the pointer is not 4-byte aligned.
+        //
+        // In practice, with Mmap and proper offsets, this pointer is aligned anyway.
         std::ptr::copy_nonoverlapping(
           &displacement_32 as *const i32 as *const u8,
           patch_site as *mut u8,
@@ -97,6 +102,25 @@ unsafe fn relocate(mmap: &mut MmapMut, relocation: &Relocation) {
         );
       }
     }
-    _ => unimplemented!("SaJIT currently cannot process this Relocation kind"),
+    RelocKind::Arm64Call => {
+      let displacement_bytes = (value as i128) - (patch_site as i128);
+      let displacement = displacement_bytes / 4;
+
+      debug_assert!((relocation.offset as usize + 4) <= mmap.len());
+
+      #[cfg(debug_assertions)]
+      if displacement > 0x1FFFFFF || displacement < -0x2000000 {
+        panic!("Relocation truncated: Target is too far for ARM64 26-bit offset");
+      }
+
+      unsafe {
+        let mut instruction = ptr::read_unaligned(patch_site as *const u32);
+
+        instruction &= 0xFC000000;
+        instruction |= (displacement as u32) & 0x03FFFFFF;
+
+        ptr::write_unaligned(patch_site as *mut u32, instruction);
+      }
+    }
   }
 }

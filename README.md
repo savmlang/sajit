@@ -4,20 +4,41 @@ The JIT Loader for the Sa VM Programming Language. This is built to handle alloc
 
 ## Platform Support
 
-| Operating System | Arch   | Status | Notes                                              |
-| ---------------- | ------ | ------ | -------------------------------------------------- |
-| Windows          | x86_64 | 🟨     | Only absolute linkage is supported                 |
-|                  | arm64  | ⏲️     | Will be considered later                           |
-| Linux            | x86_64 | 🟨     | Only absolute linkage is supported                 |
-|                  | arm64  | ⏲️     | Will be considered later                           |
-| Darwin           | x86_64 | ❌     | Intel macOS is obsolete                            |
-|                  | arm64  | ❌     | This is not intended for the near (or, far) future |
-| Android          | x86_64 | ❌     |                                                    |
-|                  | x86    | ❌     |                                                    |
-|                  | armv7  | ❌     |                                                    |
-|                  | arm64  | ❌     |                                                    |
-| iOS              | arm64  | ❌     |                                                    |
+| Operating System | Arch   | Status | Notes                                                   |
+| ---------------- | ------ | ------ | ------------------------------------------------------- |
+| Windows          | x86_64 | ✅     | [👇](#x86_64-supported-relocation)                      |
+|                  | arm64  | 🟨     | UNTESTED; Should work [👇](#arm64-supported-relocation) |
+| Linux            | x86_64 | ✅     | [👇](#x86_64-supported-relocation)                      |
+|                  | arm64  | 🟨     | UNTESTED; Should work [👇](#arm64-supported-relocation) |
+| Darwin           | x86_64 | ❌     | macOS is not on our list                                |
+|                  | arm64  | ❌     | due to unintended friction from the platform            |
+| Android          | x86_64 | ❌     |                                                         |
+|                  | x86    | ❌     |                                                         |
+|                  | armv7  | ❌     |                                                         |
+|                  | arm64  | ❌     |                                                         |
+| iOS              | arm64  | ❌     |                                                         |
 
-## Support for Windows/Linux arm64
+## X86_64 Supported Relocation
 
-Support for windows and linux arm64 is being considered and platforms with ⏲️ will be implemented in the near future.
+Our JIT Loader only handles the following x86_64 relocations.
+
+| Name                     | Note                                  |
+| :----------------------- | ------------------------------------- |
+| RelocKind::Abs8          | Uses absolute pointer                 |
+| RelocKind::X86CallPCRel4 | Uses relative pointer, range +-2.1GiB |
+| RelocKind::X86PCRel4     | Uses relative pointer, range +-2.1GiB |
+
+## Arm64 Supported Relocation
+
+Our JIT Loader only handles the following aarch64 relocations.
+
+| Name                 | Note                                  |
+| :------------------- | ------------------------------------- |
+| RelocKind::Abs8      | Uses absolute pointer                 |
+| RelocKind::Arm64Call | Uses relative pointer, range +-128MiB |
+
+## Sidenote
+
+You do not need to perform relocation calculations. The loader resolves and patches all addresses; you only provide the absolute target address.
+
+Please note that the supported relocation list is generated from our own tests with cranelift-codegen crate for relocations of function `call`s. The names are directly borrowed from their list and we only link a subset of them.

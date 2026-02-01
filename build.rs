@@ -30,5 +30,5 @@ fn main() {
       target_arch = "aarch64"
     )
   )]
-  println!("cargo:warning=Unless you know what you are doing, disable the `aarch64` feature.");
+  println!("cargo:warning=`aarch64` JIT Loader is untested, it should work.");
 }

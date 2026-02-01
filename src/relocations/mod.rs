@@ -15,7 +15,10 @@ pub enum RelocKind {
   X86PCRel4 = 2,
   // Aarch64
   Arm64Call = 3,
-  Aarch64AdrGotPage21 = 4,
-  Aarch64Ld64GotLo12Nc = 5,
-  Aarch64AddAbsLo12Nc = 6,
+  // Cranelift doesn't generate these for
+  // function calls
+  //
+  // Aarch64AdrGotPage21 = 4,
+  // Aarch64Ld64GotLo12Nc = 5,
+  // Aarch64AddAbsLo12Nc = 6,
 }
