@@ -25,4 +25,4 @@ jobs:
           toolchain: nightly
 
       - name: Run Codegen
-        run: cargo run --example codegen --features arm64
+        run: cargo run --example codegen --features aarch64
