@@ -11,7 +11,7 @@ jobs:
       fail-fast: true
 
       matrix:
-        os: [windows-11-arm]
+        os: [windows-11-arm, windows-latest, ubuntu-latest, ubuntu-24.04-arm]
 
     runs-on: ${{ matrix.os }}
 
@@ -25,4 +25,4 @@ jobs:
           toolchain: nightly
 
       - name: Run Codegen
-        run: cargo run --example codegen --features aarch64
+        run: cargo run --example testjit --features aarch64
