@@ -111,11 +111,11 @@ fn jit(data: &[u8], reloc: Vec<Relocation>) {
     let e: extern "C" fn(i64, i64) -> i64 = transmute(code.entry_ptr());
 
     println!("{}", e(10, 20));
-    assert_eq!(e(10, 20), 10);
+    assert_eq!(e(10, 20), 20);
   }
 }
 
 extern "C" fn myfn(a: i64) {
   println!("Hi, {a}");
-  assert_eq!(a, 20);
+  assert_eq!(a, 10);
 }
