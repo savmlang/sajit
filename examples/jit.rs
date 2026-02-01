@@ -1,34 +1,27 @@
-use std::{mem::transmute, ptr};
+use std::mem::transmute;
 
-use memmap2::MmapOptions;
+use sajit::{
+  MemoryExecutable,
+  relocations::{RelocKind, Relocation},
+};
 
 fn main() {
   unsafe {
-    let mut data = include!("./bin");
+    let data = include!("./bin");
+    let reloc = [Relocation {
+      addend: 0,
+      kind: RelocKind::Abs8,
+      offset: 18,
+      symbol_addr: myfn as *const () as usize as _,
+    }];
 
-    {
-      let idx = data.as_mut_ptr().add(18) as *mut usize;
+    println!("What's linked: {}", myfn as *const () as usize);
 
-      ptr::write_unaligned(idx, myfn as *mut usize as usize);
-    }
+    let code = MemoryExecutable::new(&data, &reloc).unwrap();
 
-    let mut mmap = MmapOptions::new();
+    let e: extern "C" fn(i32, i32) -> i32 = transmute(code.entry_ptr());
 
-    {
-      mmap.len(data.len());
-
-      let mut anon = mmap.map_anon().unwrap();
-
-      anon.copy_from_slice(&data);
-
-      let f = anon.make_exec().unwrap();
-
-      {
-        let cdcl: extern "C" fn(a: i64, b: i64) -> i64 = transmute(f.as_ptr());
-
-        println!("{}", cdcl(1, 2));
-      }
-    }
+    println!("{}", e(10, 20));
   }
 }
 

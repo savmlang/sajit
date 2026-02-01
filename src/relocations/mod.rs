@@ -10,12 +10,12 @@ pub struct Relocation {
 #[repr(C)]
 pub enum RelocKind {
   // X86-64
-  Abs8,
-  X86CallPCRel4,
-  X86PCRel4,
+  Abs8 = 0,
+  X86CallPCRel4 = 1,
+  X86PCRel4 = 2,
   // Aarch64
-  Arm64Call,
-  Aarch64AdrGotPage21,
-  Aarch64Ld64GotLo12Nc,
-  Aarch64AddAbsLo12Nc,
+  Arm64Call = 3,
+  Aarch64AdrGotPage21 = 4,
+  Aarch64Ld64GotLo12Nc = 5,
+  Aarch64AddAbsLo12Nc = 6,
 }

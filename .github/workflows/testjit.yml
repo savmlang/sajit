@@ -1,0 +1,28 @@
+name: Test JIT
+
+on:
+  push:
+
+jobs:
+  run-codegen:
+    name: Run Code Generator
+
+    strategy:
+      fail-fast: true
+
+      matrix:
+        os: [windows-11-arm]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+
+      - name: Run Codegen
+        run: cargo run --example codegen

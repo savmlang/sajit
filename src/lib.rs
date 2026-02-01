@@ -66,22 +66,37 @@ impl MemoryExecutable {
 
 #[inline(always)]
 unsafe fn relocate(mmap: &mut MmapMut, relocation: &Relocation) {
-  let patch_site =
-    unsafe { (mmap.as_mut_ptr() as *mut u8).add(relocation.offset as _) as *mut u64 };
+  println!("Found start: {}", mmap.as_ptr() as usize);
+
+  let patch_site = unsafe { (mmap.as_mut_ptr() as *mut u8).add(relocation.offset as _) };
 
   let value = (relocation.symbol_addr as i128 + relocation.addend as i128) as u64;
 
   match relocation.kind {
     RelocKind::Abs8 => unsafe {
       debug_assert_eq!(relocation.addend, 0);
+      debug_assert!((relocation.offset as usize + 8) <= mmap.len());
 
-      ptr::write_unaligned(patch_site, value);
+      ptr::write_unaligned(patch_site as *mut u64, value);
     },
-    // RelocKind::X86CallPCRel4 | RelocKind::X86PCRel4 => unsafe {
-    //   // PC-relative: Target - (Current_Instruction_Pointer + 4)
-    //   let delta = target_val - (patch_site as i64 + 4);
-    //   ptr::write_unaligned(patch_site as *mut i32, delta as i32);
-    // },
-    _ => unimplemented!("SaJIT can only handle x86_64 Abs8 Instruction mapping"),
+    RelocKind::X86CallPCRel4 | RelocKind::X86PCRel4 => {
+      let displacement = (value as i128) - (patch_site as i128 + 4);
+
+      debug_assert!((relocation.offset as usize + 4) <= mmap.len());
+      #[cfg(debug_assertions)]
+      if displacement > i32::MAX as _ || displacement < i32::MIN as _ {
+        panic!("Relocation truncated to fit: Target is too far for 32-bit offset");
+      }
+
+      let displacement_32 = displacement as i32;
+      unsafe {
+        std::ptr::copy_nonoverlapping(
+          &displacement_32 as *const i32 as *const u8,
+          patch_site as *mut u8,
+          4,
+        );
+      }
+    }
+    _ => unimplemented!("SaJIT currently cannot process this Relocation kind"),
   }
 }
