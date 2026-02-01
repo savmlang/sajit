@@ -3,19 +3,12 @@ use cranelift::{
     Context,
     ir::{Function, UserExternalName, UserFuncName},
   },
-  prelude::{
-    isa::lookup,
-    settings::Flags,
-    types::{I64, I128},
-    *,
-  },
+  prelude::{isa::lookup, settings::Flags, types::I64, *},
 };
 use target_lexicon::Triple;
 
 fn main() {
-  let mut builder = settings::builder();
-
-  builder.set("enable_llvm_abi_extensions", "true").unwrap();
+  let builder = settings::builder();
 
   let isa = lookup(Triple::host())
     .expect("Unsupported target isa")
@@ -26,7 +19,7 @@ fn main() {
 
   sig.params.push(AbiParam::new(I64));
   sig.params.push(AbiParam::new(I64));
-  sig.returns.push(AbiParam::new(I128));
+  sig.returns.push(AbiParam::new(I64));
 
   // IR Building
   let mut func =
@@ -37,7 +30,7 @@ fn main() {
     let mut builder = FunctionBuilder::new(&mut func, &mut func_ctx);
 
     let mut external_sig = Signature::new(isa.default_call_conv());
-    external_sig.params.push(AbiParam::new(types::I128));
+    external_sig.params.push(AbiParam::new(types::I64));
     // external_sig.returns.push(AbiParam::new(types::I64)); // Pointer as i64
 
     let si = builder.import_signature(external_sig);
@@ -48,7 +41,7 @@ fn main() {
       patchable: false,
       name: ExternalName::User(name_ref),
       signature: si,
-      colocated: false,
+      colocated: true,
     });
 
     let block = builder.create_block();
@@ -59,10 +52,10 @@ fn main() {
     let arg1 = builder.block_params(block)[1];
 
     // let result = builder.ins().sadd(arg0, const_val);
-    let out = builder.ins().iconcat(arg0, arg1);
-    builder.ins().call(fnref, &[out]);
+    let _ = builder.ins().iconcat(arg0, arg1);
+    builder.ins().call(fnref, &[arg0]);
 
-    builder.ins().return_(&[out]);
+    builder.ins().return_(&[arg1]);
     builder.seal_all_blocks();
     builder.finalize();
   }

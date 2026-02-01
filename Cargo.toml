@@ -1,5 +1,6 @@
 [package]
 name = "sajit"
+description = "Sa Programming Language Just-In-Time Loader"
 version = "0.1.0"
 edition = "2024"
 
@@ -12,3 +13,6 @@ clear-cache = "0.1"
 [dev-dependencies]
 cranelift = { version = "0.128", features = ["module", "native"] }
 target-lexicon = "0.13"
+
+[features]
+aarch64 = []
