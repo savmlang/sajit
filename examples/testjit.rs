@@ -6,9 +6,9 @@ use cranelift::{
     binemit::Reloc,
     ir::{Function, UserExternalName, UserFuncName},
   },
-  prelude::{isa::lookup, settings::Flags, types::I64, *},
+  native::builder_with_options,
+  prelude::{settings::Flags, types::I64, *},
 };
-use target_lexicon::Triple;
 
 use sajit::{
   MemoryExecutable,
@@ -18,7 +18,7 @@ use sajit::{
 fn main() {
   let builder = settings::builder();
 
-  let isa = lookup(Triple::host())
+  let isa = builder_with_options(true)
     .expect("Unsupported target isa")
     .finish(Flags::new(builder))
     .expect("Could not build ISA");
