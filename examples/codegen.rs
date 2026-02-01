@@ -41,7 +41,7 @@ fn main() {
       patchable: false,
       name: ExternalName::User(name_ref),
       signature: si,
-      colocated: true,
+      colocated: false,
     });
 
     let block = builder.create_block();
