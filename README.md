@@ -7,9 +7,9 @@ The JIT Loader for the Sa VM Programming Language. This is built to handle alloc
 | Operating System | Arch   | Status | Notes                                                   |
 | ---------------- | ------ | ------ | ------------------------------------------------------- |
 | Windows          | x86_64 | ✅     | [👇](#x86_64-supported-relocation)                      |
-|                  | arm64  | 🟨     | UNTESTED; Should work [👇](#arm64-supported-relocation) |
+|                  | arm64  | ✅     | [👇](#arm64-supported-relocation) |
 | Linux            | x86_64 | ✅     | [👇](#x86_64-supported-relocation)                      |
-|                  | arm64  | 🟨     | UNTESTED; Should work [👇](#arm64-supported-relocation) |
+|                  | arm64  | ✅     | [👇](#arm64-supported-relocation) |
 | Darwin           | x86_64 | ❌     | macOS is not on our list                                |
 |                  | arm64  | ❌     | due to unintended friction from the platform            |
 | Android          | x86_64 | ❌     |                                                         |
