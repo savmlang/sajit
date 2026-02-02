@@ -80,6 +80,9 @@ unsafe fn relocate(mmap: &mut MmapMut, relocation: &Relocation) {
 
       ptr::write_unaligned(patch_site as *mut u64, value);
     },
+    #[cfg(not(target_arch="x86_64"))]
+    RelocKind::X86CallPCRel4 | RelocKind::X86PCRel4 => unimplemented!("Unsupported platform"),
+    #[cfg(target_arch="x86_64")]
     RelocKind::X86CallPCRel4 | RelocKind::X86PCRel4 => {
       let displacement = (value as i128) - (patch_site as i128 + 4);
 
@@ -102,6 +105,9 @@ unsafe fn relocate(mmap: &mut MmapMut, relocation: &Relocation) {
         );
       }
     }
+    #[cfg(not(target_arch="aarch64"))]
+    RelocKind::Arm64Call => unimplemented!("Unsupported platform"),
+    #[cfg(target_arch="aarcch64")]
     RelocKind::Arm64Call => {
       let displacement_bytes = (value as i128) - (patch_site as i128);
       let displacement = displacement_bytes / 4;
