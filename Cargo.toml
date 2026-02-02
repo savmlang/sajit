@@ -12,6 +12,3 @@ clear-cache = "0.1"
 
 [dev-dependencies]
 cranelift = { version = "0.128", features = ["native"] }
-
-[features]
-aarch64 = []
