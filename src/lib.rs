@@ -107,7 +107,7 @@ unsafe fn relocate(mmap: &mut MmapMut, relocation: &Relocation) {
     }
     #[cfg(not(target_arch="aarch64"))]
     RelocKind::Arm64Call => unimplemented!("Unsupported platform"),
-    #[cfg(target_arch="aarcch64")]
+    #[cfg(target_arch="aarch64")]
     RelocKind::Arm64Call => {
       let displacement_bytes = (value as i128) - (patch_site as i128);
       let displacement = displacement_bytes / 4;
