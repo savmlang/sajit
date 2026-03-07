@@ -35,13 +35,22 @@ pub struct MemoryExecutable {
 }
 
 impl MemoryExecutable {
-  pub unsafe fn new(
+  pub unsafe fn new_anon(
     machinecode: &[u8],
     reloc: &[Relocation],
   ) -> Result<Self, Box<dyn std::error::Error>> {
     let mut mmaput = MmapOptions::new().len(machinecode.len()).map_anon()?;
     mmaput.copy_from_slice(machinecode);
 
+    Self::new(mmaput, reloc, machinecode.len())
+  }
+
+  #[inline(always)]
+  fn new(
+    mut mmaput: MmapMut,
+    reloc: &[Relocation],
+    len: usize,
+  ) -> Result<Self, Box<dyn std::error::Error>> {
     for relocation in reloc {
       unsafe {
         relocate(&mut mmaput, relocation);
@@ -50,7 +59,7 @@ impl MemoryExecutable {
 
     let map = mmaput.make_exec()?;
 
-    flush_icache(map.as_ptr() as _, machinecode.len());
+    flush_icache(map.as_ptr() as _, len);
 
     Ok(Self { map })
   }
@@ -80,9 +89,9 @@ unsafe fn relocate(mmap: &mut MmapMut, relocation: &Relocation) {
 
       ptr::write_unaligned(patch_site as *mut u64, value);
     },
-    #[cfg(not(target_arch="x86_64"))]
+    #[cfg(not(target_arch = "x86_64"))]
     RelocKind::X86CallPCRel4 | RelocKind::X86PCRel4 => unimplemented!("Unsupported platform"),
-    #[cfg(target_arch="x86_64")]
+    #[cfg(target_arch = "x86_64")]
     RelocKind::X86CallPCRel4 | RelocKind::X86PCRel4 => {
       let displacement = (value as i128) - (patch_site as i128 + 4);
 
@@ -105,9 +114,9 @@ unsafe fn relocate(mmap: &mut MmapMut, relocation: &Relocation) {
         );
       }
     }
-    #[cfg(not(target_arch="aarch64"))]
+    #[cfg(not(target_arch = "aarch64"))]
     RelocKind::Arm64Call => unimplemented!("Unsupported platform"),
-    #[cfg(target_arch="aarch64")]
+    #[cfg(target_arch = "aarch64")]
     RelocKind::Arm64Call => {
       let displacement_bytes = (value as i128) - (patch_site as i128);
       let displacement = displacement_bytes / 4;

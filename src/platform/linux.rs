@@ -1,3 +1,4 @@
+#[cfg(not(target_arch = "x86_64"))]
 use core::ffi::c_void;
 
 #[cfg(not(target_arch = "x86_64"))]

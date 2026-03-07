@@ -106,7 +106,7 @@ fn jit(data: &[u8], reloc: Vec<Relocation>) {
   unsafe {
     println!("What's linked: {}", myfn as *const () as usize);
 
-    let code = MemoryExecutable::new(&data, &reloc).unwrap();
+    let code = MemoryExecutable::new_anon(&data, &reloc).unwrap();
 
     let e: extern "C" fn(i64, i64) -> i64 = transmute(code.entry_ptr());
 
