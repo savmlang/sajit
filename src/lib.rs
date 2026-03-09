@@ -1,3 +1,4 @@
+pub mod advanced;
 pub mod platform;
 
 use std::ptr;
@@ -24,16 +25,17 @@ pub mod relocations;
 /// executable.
 ///
 /// Casting a `*const Executable` as `*mut Executable`
-/// is guaranteed undefined behaviour
-///
-/// No CPU would like this and would result in memory
-/// access violation, or even worse, crash with the OS.
+/// is guaranteed undefined behaviour that no CPU would like
+/// and would result in memory access violation, or even worse,
+/// crash with the OS.
 pub struct Executable;
 
+#[cfg(any(windows, target_os = "linux"))]
 pub struct MemoryExecutable {
   map: Mmap,
 }
 
+#[cfg(any(windows, target_os = "linux"))]
 impl MemoryExecutable {
   pub unsafe fn new_anon(
     machinecode: &[u8],
@@ -53,7 +55,7 @@ impl MemoryExecutable {
   ) -> Result<Self, Box<dyn std::error::Error>> {
     for relocation in reloc {
       unsafe {
-        relocate(&mut mmaput, relocation);
+        relocate(mmaput.as_mut_ptr(), mmaput.len(), relocation);
       }
     }
 
@@ -77,25 +79,41 @@ impl MemoryExecutable {
 }
 
 #[inline(always)]
-unsafe fn relocate(mmap: &mut MmapMut, relocation: &Relocation) {
-  let patch_site = unsafe { (mmap.as_mut_ptr() as *mut u8).add(relocation.offset as _) };
+unsafe fn relocate(mmap: *mut u8, len: usize, relocation: &Relocation) {
+  let patch_site = unsafe { mmap.add(relocation.offset as _) };
 
-  let value = (relocation.symbol_addr as i128 + relocation.addend as i128) as u64;
+  // NOTE: DANGER
+  //
+  // We do a direct bit reinterpretation to preserve the logic
+  // wrapping_add ensures that stuff becomes negative
+  let value = (relocation.symbol_addr as u64).wrapping_add(relocation.addend.cast_unsigned());
 
   match relocation.kind {
     RelocKind::Abs8 => unsafe {
       debug_assert_eq!(relocation.addend, 0);
-      debug_assert!((relocation.offset as usize + 8) <= mmap.len());
+      debug_assert!((relocation.offset as usize + 8) <= len);
 
       ptr::write_unaligned(patch_site as *mut u64, value);
     },
+    #[cfg(target_pointer_width = "64")]
+    RelocKind::Abs4 => unimplemented!("Unsupported platform"),
+    #[cfg(not(target_pointer_width = "64"))]
+    RelocKind::Abs4 => {
+      debug_assert_eq!(relocation.addend, 0);
+      debug_assert!((relocation.offset as usize + 4) <= len);
+
+      ptr::write_unaligned(patch_site as *mut u32, value);
+    }
     #[cfg(not(target_arch = "x86_64"))]
     RelocKind::X86CallPCRel4 | RelocKind::X86PCRel4 => unimplemented!("Unsupported platform"),
     #[cfg(target_arch = "x86_64")]
     RelocKind::X86CallPCRel4 | RelocKind::X86PCRel4 => {
-      let displacement = (value as i128) - (patch_site as i128 + 4);
+      let target_addr = value as i64;
+      let rip_after_instr = (patch_site as i64).wrapping_add(4);
 
-      debug_assert!((relocation.offset as usize + 4) <= mmap.len());
+      let displacement = target_addr.wrapping_sub(rip_after_instr);
+
+      debug_assert!((relocation.offset as usize + 4) <= len);
       #[cfg(debug_assertions)]
       if displacement > i32::MAX as _ || displacement < i32::MIN as _ {
         panic!("Relocation truncated to fit: Target is too far for 32-bit offset");
@@ -118,8 +136,19 @@ unsafe fn relocate(mmap: &mut MmapMut, relocation: &Relocation) {
     RelocKind::Arm64Call => unimplemented!("Unsupported platform"),
     #[cfg(target_arch = "aarch64")]
     RelocKind::Arm64Call => {
-      let displacement_bytes = (value as i128) - (patch_site as i128);
-      let displacement = displacement_bytes / 4;
+      let target_addr = value as i64;
+      let rip_after_instr = patch_site as i64;
+      let displacement_bytes = target_addr.wrapping_sub(rip_after_instr);
+
+      debug_assert_eq!(
+        displacement_bytes % 4,
+        0,
+        "ARM64 branch target must be 4-byte aligned"
+      );
+
+      // OPTIMIZATION
+      // Directly do division by `4`
+      let displacement = displacement_bytes >> 2;
 
       debug_assert!((relocation.offset as usize + 4) <= mmap.len());
 

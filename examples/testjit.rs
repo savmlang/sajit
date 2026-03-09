@@ -9,9 +9,8 @@ use cranelift::{
   native::builder_with_options,
   prelude::{settings::Flags, types::I64, *},
 };
-
 use sajit::{
-  MemoryExecutable,
+  advanced::{MemoryExecutable, MemoryExecutableApi, WriteFnResult},
   relocations::{RelocKind, Relocation},
 };
 
@@ -106,12 +105,26 @@ fn jit(data: &[u8], reloc: Vec<Relocation>) {
   unsafe {
     println!("What's linked: {}", myfn as *const () as usize);
 
-    let code = MemoryExecutable::new_anon(&data, &reloc).unwrap();
+    let mut jit = MemoryExecutable::new_slab("code.bin");
 
-    let e: extern "C" fn(i64, i64) -> i64 = transmute(code.entry_ptr());
+    let data = jit.write_fn(100, data, &reloc);
+
+    let code = match data {
+      WriteFnResult::Executable(pt) => pt,
+      WriteFnResult::ProvisionalPtr(pt) => {
+        jit.seal();
+        pt
+      }
+      _ => unreachable!(),
+    };
+
+    let e: extern "C" fn(i64, i64) -> i64 = transmute(code);
 
     println!("{}", e(10, 20));
     assert_eq!(e(10, 20), 20);
+
+    jit.release(100);
+    jit.free().expect("Impossible, this must free!");
   }
 }
 

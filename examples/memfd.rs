@@ -3,7 +3,6 @@ use std::{
   fs::File,
   io::{Read, Seek, SeekFrom, Write},
   os::fd::FromRawFd,
-  ptr::null,
 };
 
 use libc::{MFD_CLOEXEC, memfd_create};
