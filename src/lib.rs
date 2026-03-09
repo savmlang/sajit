@@ -4,12 +4,13 @@ pub mod platform;
 use std::ptr;
 
 pub use memmap2;
+#[cfg(any(windows, target_os = "linux"))]
 use memmap2::{Mmap, MmapMut, MmapOptions};
 
-use crate::{
-  platform::flush_icache,
-  relocations::{RelocKind, Relocation},
-};
+#[cfg(any(windows, target_os = "linux"))]
+use crate::platform::flush_icache;
+
+use crate::relocations::{RelocKind, Relocation};
 
 pub mod relocations;
 

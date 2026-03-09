@@ -6,7 +6,7 @@ use std::{
 };
 
 use libc::{
-  MAP_ANON, MAP_JIT, MAP_PRIVATE, MFD_CLOEXEC, PROT_EXEC, PROT_READ, PROT_WRITE, mmap, munmap,
+  MAP_ANON, MAP_JIT, MAP_PRIVATE, FD_CLOEXEC, PROT_EXEC, PROT_READ, PROT_WRITE, mmap, munmap,
 };
 
 use crate::{
@@ -51,7 +51,7 @@ impl MemoryExecutableApi for MemoryExecutable {
         MAP_ANON | MAP_PRIVATE | MAP_JIT,
         -1,
         0,
-      );
+      ) as *mut u8;
 
       let cursor = rview.align_offset(16);
 
@@ -106,7 +106,7 @@ impl MemoryExecutableApi for MemoryExecutable {
 
       self.stored.fetch_add(1, Ordering::Relaxed);
 
-      WriteFnResult::Executable(dst_rw)
+      WriteFnResult::Executable(dst_rw as _)
     }
   }
 
