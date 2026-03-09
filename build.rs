@@ -9,9 +9,13 @@ fn main() {
         ),
       ),
       not(
-        any(target_os = "linux", windows)
+        any(
+          target_os = "linux", 
+          target_os = "macos",
+          windows
+        )
       )
     )
   )]
-  compile_error!("This package only works for x86_64 and aarch64 Windows and Linux runners");
+  compile_error!("This package only works for x86_64 and aarch64 Windows, Linux and MacOS runners (for now)");
 }

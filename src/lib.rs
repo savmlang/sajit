@@ -150,7 +150,7 @@ unsafe fn relocate(mmap: *mut u8, len: usize, relocation: &Relocation) {
       // Directly do division by `4`
       let displacement = displacement_bytes >> 2;
 
-      debug_assert!((relocation.offset as usize + 4) <= mmap.len());
+      debug_assert!((relocation.offset as usize + 4) <= len);
 
       #[cfg(debug_assertions)]
       if displacement > 0x1FFFFFF || displacement < -0x2000000 {
