@@ -1,5 +1,6 @@
 use std::{
   mem::forget,
+  num::NonZeroU8,
   ptr::copy_nonoverlapping,
   ptr::null_mut,
   sync::atomic::{AtomicUsize, Ordering, compiler_fence},
@@ -38,20 +39,21 @@ pub struct MemoryExecutable {
 }
 
 impl MemoryExecutableApi for MemoryExecutable {
-  type FID = u64;
-
-  fn new_slab(_path: impl AsRef<str>) -> Self {
+  fn new_slab(_path: impl AsRef<str>, multiple: Option<NonZeroU8>) -> Self {
     unsafe {
+      let size =
+        Self::DEFAULT_SLAB_SIZE.saturating_mul(multiple.map(|x| x.get()).unwrap_or(1) as _);
+
       let fd = memfd_create(b"sajit\0".as_ptr() as _, MFD_CLOEXEC);
       if fd == -1 {
         panic!("Failed to create memfd");
       }
 
-      ftruncate(fd, Self::DEFAULT_SLAB_SIZE as _);
+      ftruncate(fd, size as _);
 
       let rw_ptr = mmap(
         null_mut(),
-        Self::DEFAULT_SLAB_SIZE as _,
+        size as _,
         PROT_READ | PROT_WRITE,
         MAP_SHARED,
         fd,
@@ -60,7 +62,7 @@ impl MemoryExecutableApi for MemoryExecutable {
 
       let rx_ptr = mmap(
         null_mut(),
-        Self::DEFAULT_SLAB_SIZE as _,
+        size as _,
         PROT_READ | PROT_EXEC,
         MAP_SHARED,
         fd,
@@ -73,7 +75,7 @@ impl MemoryExecutableApi for MemoryExecutable {
         fd,
         rxview: rx_ptr as _,
         rwview: rw_ptr as _,
-        size: Self::DEFAULT_SLAB_SIZE,
+        size,
         cursor, // Simplified: align this in your write_fn
         stored: AtomicUsize::new(0),
       }
@@ -82,7 +84,6 @@ impl MemoryExecutableApi for MemoryExecutable {
 
   fn write_fn(
     &mut self,
-    _fid: Self::FID,
     data: &[u8],
     relocs: &[crate::relocations::Relocation],
   ) -> super::WriteFnResult {
@@ -125,11 +126,7 @@ impl MemoryExecutableApi for MemoryExecutable {
     }
   }
 
-  fn seal(&mut self) -> Option<Box<[Self::FID]>> {
-    None
-  }
-
-  fn release(&mut self, _fid: Self::FID) {
+  fn release(&mut self) {
     let _old = self.stored.fetch_sub(1, Ordering::Relaxed);
     debug_assert!(_old != 0);
   }

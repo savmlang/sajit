@@ -1,16 +1,14 @@
 use std::{
   mem::forget,
+  num::NonZeroU8,
   ptr::copy_nonoverlapping,
   ptr::null_mut,
   sync::atomic::{AtomicUsize, Ordering, compiler_fence},
 };
 
-use libc::{
-  MAP_ANON, MAP_JIT, MAP_PRIVATE, FD_CLOEXEC, PROT_EXEC, PROT_READ, PROT_WRITE, mmap, munmap,
-};
+use libc::{MAP_ANON, MAP_JIT, MAP_PRIVATE, PROT_EXEC, PROT_READ, PROT_WRITE, mmap, munmap};
 
 use crate::{
-  Executable,
   advanced::{MemoryExecutableApi, WriteFnResult},
   relocate,
 };
@@ -40,13 +38,14 @@ pub struct MemoryExecutable {
 }
 
 impl MemoryExecutableApi for MemoryExecutable {
-  type FID = u64;
-
-  fn new_slab(_path: impl AsRef<str>) -> Self {
+  fn new_slab(_path: impl AsRef<str>, multiple: Option<NonZeroU8>) -> Self {
     unsafe {
+      let size =
+        Self::DEFAULT_SLAB_SIZE.saturating_mul(multiple.map(|x| x.get()).unwrap_or(1) as _);
+
       let rview = mmap(
         null_mut(),
-        Self::DEFAULT_SLAB_SIZE as _,
+        size as _,
         PROT_READ | PROT_WRITE | PROT_EXEC,
         MAP_ANON | MAP_PRIVATE | MAP_JIT,
         -1,
@@ -57,7 +56,7 @@ impl MemoryExecutableApi for MemoryExecutable {
 
       Self {
         rview,
-        size: Self::DEFAULT_SLAB_SIZE,
+        size,
         cursor,
         stored: AtomicUsize::new(0),
       }
@@ -66,7 +65,6 @@ impl MemoryExecutableApi for MemoryExecutable {
 
   fn write_fn(
     &mut self,
-    _fid: Self::FID,
     data: &[u8],
     relocs: &[crate::relocations::Relocation],
   ) -> super::WriteFnResult {
@@ -110,11 +108,7 @@ impl MemoryExecutableApi for MemoryExecutable {
     }
   }
 
-  fn seal(&mut self) -> Option<Box<[Self::FID]>> {
-    None
-  }
-
-  fn release(&mut self, _fid: Self::FID) {
+  fn release(&mut self) {
     let _old = self.stored.fetch_sub(1, Ordering::Relaxed);
     debug_assert!(_old != 0);
   }

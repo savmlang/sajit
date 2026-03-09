@@ -6,7 +6,6 @@ edition = "2024"
 
 [dependencies]
 libc = "0.2"
-memmap2 = "0.9"
 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.62", features = [
@@ -21,4 +20,4 @@ windows = { version = "0.62", features = [
 clear-cache = "0.1"
 
 [dev-dependencies]
-cranelift = { version = "0.128", features = ["native"] }
+cranelift = { version = "0.129", features = ["native"] }

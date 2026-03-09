@@ -1,28 +1,35 @@
 # SaJIT
 
-The JIT Loader for the Sa VM Programming Language. This is built to handle allocation, library linking, relocation Just-In-Time before the code loads into R^X mode.
+SaJIT is a handwritten cross-platform cross-architecture hand rolled loader designed to be extremely lean and efficient with incredible relocating precision.
+
+It is fundamentally a slab allocator - linker combination designed for performance intensive workloads.
+
+and it uses RX, RW paging system (macOS is an exception)
+
+It fundamentally deviates from the general norm into high performance computing and uses file-backed pages on platforms like windows
 
 ## Platform Support
 
-| Operating System | Arch        | Status | Notes                              |
-| ---------------- | ----------- | ------ | ---------------------------------- |
-| Windows          | x86_64      | ✅     | [👇](#x86_64-supported-relocation) |
-|                  | x86         | 🟨     | [👇](#x86-supported-relocation)    |
-|                  | arm64       | ✅     | [👇](#arm64-supported-relocation)  |
-| Linux            | x86_64      | ✅     | [👇](#x86_64-supported-relocation) |
-|                  | x86         | 🟨     | [👇](#x86-supported-relocation)    |
-|                  | arm64       | ✅     | [👇](#arm64-supported-relocation)  |
-|                  | armv7       | 🟨     | [👇](#armv7-supported-relocation)  |
-|                  | riscv64     | 🟨     |                                    |
-|                  | riscv32     | 🟨     |                                    |
-|                  | loongarch64 | 🟨     |                                    |
-| Darwin           | x86_64      | 🟨     | macOS might be implemented         |
-|                  | arm64       | 🟨     |                                    |
-| Android          | x86_64      | ❌     | Android has unintended friction    |
-|                  | x86         | ❌     | towards memory mapped code due to  |
-|                  | armv7       | ❌     | security reasons                   |
-|                  | arm64       | ❌     |                                    |
-| iOS              | arm64       | ❌     | Experimental, Hacky, not worth it  |
+| Operating System | Arch        | Status | Notes                                           |
+| ---------------- | ----------- | ------ | ----------------------------------------------- |
+| Windows          | x86_64      | ✅     | [👇](#x86_64-supported-relocation)              |
+|                  | x86         | 🟨     | [👇](#armv7-x86-riscv32-supported-relocation)   |
+|                  | arm64       | ✅     | [👇](#arm64-supported-relocation)               |
+| Linux            | x86_64      | ✅     | [👇](#x86_64-supported-relocation)              |
+|                  | x86         | 🟨     | [👇](#armv7-x86-riscv32-supported-relocation)   |
+|                  | arm64       | ✅     | [👇](#arm64-supported-relocation)               |
+|                  | armv7       | 🟨     | [👇](#armv7-x86-riscv32-supported-relocation)   |
+|                  | riscv64     | 🟨     | [👇](#riscv64-loongarch64-supported-relocation) |
+|                  | riscv32     | 🟨     | [👇](#armv7-x86-riscv32-supported-relocation)   |
+|                  | loongarch64 | 🟨     | [👇](#riscv64-loongarch64-supported-relocation) |
+| macOS            |             |        | Gatekeeper might block JIT. Be advised          |
+|                  | x86_64      | ✅     | [👇](#x86_64-supported-relocation)              |
+|                  | arm64       | ✅     | [👇](#arm64-supported-relocation)               |
+| Android          | x86_64      | ❌     | Android has unintended friction                 |
+|                  | x86         | ❌     | towards memory mapped code due to               |
+|                  | armv7       | ❌     | security reasons.                               |
+|                  | arm64       | ❌     |                                                 |
+| iOS              | arm64       | ❌     | Experimental, Hacky, not worth it.              |
 
 ✅: Guaranteed support
 🟨: Tests Pending
@@ -38,14 +45,6 @@ Our JIT Loader only handles the following x86_64 relocations.
 | RelocKind::X86CallPCRel4 | Uses relative pointer, range +-2.1GiB |
 | RelocKind::X86PCRel4     | Uses relative pointer, range +-2.1GiB |
 
-## X86 Supported Relocation
-
-Our JIT Loader only handles the following x86 relocations.
-
-| Name            | Note                  |
-| :-------------- | --------------------- |
-| RelocKind::Abs4 | Uses absolute pointer |
-
 ## Arm64 Supported Relocation
 
 Our JIT Loader only handles the following aarch64 relocations.
@@ -55,13 +54,23 @@ Our JIT Loader only handles the following aarch64 relocations.
 | RelocKind::Abs8      | Uses absolute pointer                 |
 | RelocKind::Arm64Call | Uses relative pointer, range +-128MiB |
 
-## Armv7 Supported Relocation
+# Tier 2 Targets
 
-Our JIT Loader only handles the following armv7 relocations.
+## Armv7, X86, Riscv32 Supported Relocation
+
+Our JIT Loader only handles the following 32-bit relocations.
 
 | Name            | Note                  |
 | :-------------- | --------------------- |
 | RelocKind::Abs4 | Uses absolute pointer |
+
+## Riscv64, Loongarch64 Supported Relocation
+
+Our JIT Loader only handles the following 64-bit relocations.
+
+| Name            | Note                  |
+| :-------------- | --------------------- |
+| RelocKind::Abs8 | Uses absolute pointer |
 
 ## Sidenote
 

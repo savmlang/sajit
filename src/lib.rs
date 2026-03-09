@@ -1,18 +1,24 @@
+//! SaJIT Loader
+//!
+//! SaJIT is a handwritten cross-platform cross-architecture hand rolled loader
+//! designed to be extremely lean and efficient with incredible relocating precision.
+//!
+//! It is fundamentally a slab allocator - linker combination designed for performance
+//! intensive workloads
+//!
+//! It fundamentally deviates from the general norm into high performance computing
+//! and uses file-backed pages on platforms like windows
+
 pub mod advanced;
 pub mod platform;
 
 use std::ptr;
 
-pub use memmap2;
-#[cfg(any(windows, target_os = "linux"))]
-use memmap2::{Mmap, MmapMut, MmapOptions};
-
-#[cfg(any(windows, target_os = "linux"))]
-use crate::platform::flush_icache;
-
 use crate::relocations::{RelocKind, Relocation};
 
 pub mod relocations;
+
+pub use advanced::*;
 
 /// This is a wrapper structure
 ///
@@ -30,54 +36,6 @@ pub mod relocations;
 /// and would result in memory access violation, or even worse,
 /// crash with the OS.
 pub struct Executable;
-
-#[cfg(any(windows, target_os = "linux"))]
-pub struct MemoryExecutable {
-  map: Mmap,
-}
-
-#[cfg(any(windows, target_os = "linux"))]
-impl MemoryExecutable {
-  pub unsafe fn new_anon(
-    machinecode: &[u8],
-    reloc: &[Relocation],
-  ) -> Result<Self, Box<dyn std::error::Error>> {
-    let mut mmaput = MmapOptions::new().len(machinecode.len()).map_anon()?;
-    mmaput.copy_from_slice(machinecode);
-
-    Self::new(mmaput, reloc, machinecode.len())
-  }
-
-  #[inline(always)]
-  fn new(
-    mut mmaput: MmapMut,
-    reloc: &[Relocation],
-    len: usize,
-  ) -> Result<Self, Box<dyn std::error::Error>> {
-    for relocation in reloc {
-      unsafe {
-        relocate(mmaput.as_mut_ptr(), mmaput.len(), relocation);
-      }
-    }
-
-    let map = mmaput.make_exec()?;
-
-    flush_icache(map.as_ptr() as _, len);
-
-    Ok(Self { map })
-  }
-
-  /// Now, its your task to find out what it is
-  ///
-  /// It's fully safe from the standpoint of code,
-  /// Its your responsibility to use it responsibly
-  ///
-  /// The function is not unsafe, but it acts as
-  /// a reminder
-  pub unsafe fn entry_ptr(&self) -> *const Executable {
-    self.map.as_ptr() as _
-  }
-}
 
 #[inline(always)]
 unsafe fn relocate(mmap: *mut u8, len: usize, relocation: &Relocation) {

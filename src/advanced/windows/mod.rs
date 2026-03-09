@@ -1,5 +1,6 @@
 use std::{
   mem::forget,
+  num::NonZeroU8,
   ptr::copy_nonoverlapping,
   sync::atomic::{AtomicUsize, Ordering, compiler_fence},
 };
@@ -74,18 +75,19 @@ unsafe fn create_file(path: impl AsRef<str>) -> HANDLE {
 }
 
 impl MemoryExecutableApi for MemoryExecutable {
-  type FID = u64;
-
-  fn new_slab(path: impl AsRef<str>) -> Self {
+  fn new_slab(path: impl AsRef<str>, multiple: Option<NonZeroU8>) -> Self {
     unsafe {
+      let size =
+        Self::DEFAULT_SLAB_SIZE.saturating_mul(multiple.map(|x| x.get()).unwrap_or(1) as _);
+
       let file = create_file(path);
 
       let mapping = CreateFileMappingW(
         file,
         None,
         PAGE_EXECUTE_READWRITE,
-        (Self::DEFAULT_SLAB_SIZE >> 32) as u32,
-        Self::DEFAULT_SLAB_SIZE as u32,
+        (size >> 32) as u32,
+        size as u32,
         None,
       )
       .expect("Unable to create file mapping");
@@ -120,14 +122,13 @@ impl MemoryExecutableApi for MemoryExecutable {
         slab: mapping,
         rwview: rw_ptr as _,
         rxview: rx_ptr as _,
-        size: Self::DEFAULT_SLAB_SIZE,
+        size,
       }
     }
   }
 
   fn write_fn(
     &mut self,
-    _fid: Self::FID,
     data: &[u8],
     relocs: &[crate::relocations::Relocation],
   ) -> super::WriteFnResult {
@@ -174,11 +175,7 @@ impl MemoryExecutableApi for MemoryExecutable {
     }
   }
 
-  fn seal(&mut self) -> Option<Box<[Self::FID]>> {
-    None
-  }
-
-  fn release(&mut self, _fid: Self::FID) {
+  fn release(&mut self) {
     let _out = self.stored.fetch_sub(1, Ordering::Relaxed);
     debug_assert!(_out != 0);
   }

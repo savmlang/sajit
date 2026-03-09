@@ -105,16 +105,12 @@ fn jit(data: &[u8], reloc: Vec<Relocation>) {
   unsafe {
     println!("What's linked: {}", myfn as *const () as usize);
 
-    let mut jit = MemoryExecutable::new_slab("code.bin");
+    let mut jit = MemoryExecutable::new_slab("code.bin", None);
 
-    let data = jit.write_fn(100, data, &reloc);
+    let data = jit.write_fn(data, &reloc);
 
     let code = match data {
       WriteFnResult::Executable(pt) => pt,
-      WriteFnResult::ProvisionalPtr(pt) => {
-        jit.seal();
-        pt
-      }
       _ => unreachable!(),
     };
 
@@ -123,7 +119,7 @@ fn jit(data: &[u8], reloc: Vec<Relocation>) {
     println!("{}", e(10, 20));
     assert_eq!(e(10, 20), 20);
 
-    jit.release(100);
+    jit.release();
     jit.free().expect("Impossible, this must free!");
   }
 }
