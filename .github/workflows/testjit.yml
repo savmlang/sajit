@@ -4,12 +4,65 @@ on:
   push:
 
 jobs:
+  # build-codegen-llvm-use-qemu:
+  #   name: Run Code Generator (LLVM)
+
+  #   runs-on: ubuntu-latest
+
+  #   strategy:
+  #     fail-fast: true
+  #     max-parallel: 1
+
+  #     matrix:
+  #       include:
+  #         - cpu: armv7
+  #         # - cpu: riscv64
+  #         # - cpu: riscv32
+  #         # - cpu: loongarch64
+
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v6
+
+  #     - name: Setup Rust
+  #       uses: dtolnay/rust-toolchain@stable
+  #       with:
+  #         toolchain: nightly
+
+  #     - name: Install LLVM
+  #       run: |
+  #         wget https://apt.llvm.org/llvm.sh
+  #         chmod +x llvm.sh
+
+  #         sudo ./llvm.sh 21 all
+
+  # run-codegen-llvm:
+  #   name: Run Code Generator (LLVM)
+
+  #   strategy:
+  #     max-parallel: 1
+  #     fail-fast: true
+
+  #     matrix:
+  #       os:
+  #         [
+  #           windows-11-arm,
+  #           windows-latest,
+  #           ubuntu-latest,
+  #           ubuntu-24.04-arm,
+  #           macos-26-intel,
+  #           macos-26,
+  #         ]
+
+  #   runs-on: ${{ matrix.os }}
+
   run-codegen-riscv:
     name: Run Code Generator (Cranelift)
 
     runs-on: ubuntu-latest
 
     strategy:
+      max-parallel: 1
       fail-fast: true
 
       matrix:

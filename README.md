@@ -19,7 +19,7 @@ It fundamentally deviates from the general norm into high performance computing 
 |                  | x86         | 🟨     | [👇](#armv7-x86-riscv32-supported-relocation)   |
 |                  | arm64       | ✅     | [👇](#arm64-supported-relocation)               |
 |                  | armv7       | 🟨     | [👇](#armv7-x86-riscv32-supported-relocation)   |
-|                  | riscv64     | 🟨     | [👇](#riscv64-loongarch64-supported-relocation) |
+|                  | riscv64     | ✅     | [👇](#riscv64-loongarch64-supported-relocation) |
 |                  | riscv32     | 🟨     | [👇](#armv7-x86-riscv32-supported-relocation)   |
 |                  | loongarch64 | 🟨     | [👇](#riscv64-loongarch64-supported-relocation) |
 | macOS            |             |        | Gatekeeper might block JIT. Be advised          |
