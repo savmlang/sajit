@@ -39,7 +39,7 @@ pub struct MemoryExecutable {
 }
 
 impl MemoryExecutableApi for MemoryExecutable {
-  fn new_slab(_path: impl AsRef<str>, multiple: Option<NonZeroU8>) -> Self {
+  fn new_slab(multiple: Option<NonZeroU8>) -> Self {
     unsafe {
       let size =
         Self::DEFAULT_SLAB_SIZE.saturating_mul(multiple.map(|x| x.get()).unwrap_or(1) as _);
@@ -126,7 +126,7 @@ impl MemoryExecutableApi for MemoryExecutable {
     }
   }
 
-  fn release(&mut self) {
+  fn release(&self) {
     let _old = self.stored.fetch_sub(1, Ordering::Relaxed);
     debug_assert!(_old != 0);
   }

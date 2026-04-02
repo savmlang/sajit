@@ -34,12 +34,10 @@ pub trait MemoryExecutableApi: Sized {
 
   /// Creates a new `16MB` slab to store machine code in
   ///
-  /// The `path` argument is only required for Windows systems
-  ///
   /// ## Platform Specific implementation
   /// ### Windows, Linux
   /// We use RX, RW views strategy
-  fn new_slab(path: impl AsRef<str>, multiple: Option<NonZeroU8>) -> Self;
+  fn new_slab(multiple: Option<NonZeroU8>) -> Self;
 
   /// Writes a function into the data stream, returns `None` if the 4KB region is filled
   ///
@@ -49,7 +47,7 @@ pub trait MemoryExecutableApi: Sized {
   /// Makes that the FID can now be safely freed!
   /// We internally have a HashSet of the data and if all of them
   /// get freed, you are eligible to call `free`
-  fn release(&mut self);
+  fn release(&self);
 
   /// Deallocates the memory, file and all of the code stored
   ///

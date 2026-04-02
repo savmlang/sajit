@@ -105,7 +105,7 @@ fn jit(data: &[u8], reloc: Vec<Relocation>) {
   unsafe {
     println!("What's linked: {}", myfn as *const () as usize);
 
-    let mut jit = MemoryExecutable::new_slab("code.bin", None);
+    let mut jit = MemoryExecutable::new_slab(None);
 
     let data = jit.write_fn(data, &reloc);
 

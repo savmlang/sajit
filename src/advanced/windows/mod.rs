@@ -5,19 +5,12 @@ use std::{
   sync::atomic::{AtomicUsize, Ordering, compiler_fence},
 };
 
-use windows::{
-  Win32::{
-    Foundation::{CloseHandle, GENERIC_EXECUTE, GENERIC_READ, GENERIC_WRITE, HANDLE},
-    Storage::FileSystem::{
-      CREATE_ALWAYS, CreateFileW, FILE_ATTRIBUTE_TEMPORARY, FILE_FLAG_DELETE_ON_CLOSE,
-      FILE_SHARE_READ,
-    },
-    System::Memory::{
-      CreateFileMappingW, FILE_MAP_EXECUTE, FILE_MAP_READ, FILE_MAP_WRITE,
-      MEMORY_MAPPED_VIEW_ADDRESS, MapViewOfFile, PAGE_EXECUTE_READWRITE, UnmapViewOfFile,
-    },
+use windows::Win32::{
+  Foundation::{CloseHandle, HANDLE, INVALID_HANDLE_VALUE},
+  System::Memory::{
+    CreateFileMappingW, FILE_MAP_EXECUTE, FILE_MAP_READ, FILE_MAP_WRITE,
+    MEMORY_MAPPED_VIEW_ADDRESS, MapViewOfFile, PAGE_EXECUTE_READWRITE, UnmapViewOfFile,
   },
-  core::HSTRING,
 };
 
 use crate::{
@@ -38,8 +31,6 @@ use crate::{
 #[repr(align(64))]
 #[derive(Debug)]
 pub struct MemoryExecutable {
-  // File handle
-  filehd: HANDLE,
   // Section object
   slab: HANDLE,
 
@@ -53,37 +44,14 @@ pub struct MemoryExecutable {
   stored: AtomicUsize,
 }
 
-unsafe fn create_file(path: impl AsRef<str>) -> HANDLE {
-  unsafe {
-    let path = path.as_ref();
-
-    let hstr = HSTRING::from(path);
-
-    let file = CreateFileW(
-      &hstr,
-      GENERIC_READ.0 | GENERIC_WRITE.0 | GENERIC_EXECUTE.0,
-      FILE_SHARE_READ,
-      None,
-      CREATE_ALWAYS,
-      FILE_ATTRIBUTE_TEMPORARY | FILE_FLAG_DELETE_ON_CLOSE,
-      None,
-    )
-    .expect("Unable to create JIT File, Process crashing");
-
-    file
-  }
-}
-
 impl MemoryExecutableApi for MemoryExecutable {
-  fn new_slab(path: impl AsRef<str>, multiple: Option<NonZeroU8>) -> Self {
+  fn new_slab(multiple: Option<NonZeroU8>) -> Self {
     unsafe {
       let size =
         Self::DEFAULT_SLAB_SIZE.saturating_mul(multiple.map(|x| x.get()).unwrap_or(1) as _);
 
-      let file = create_file(path);
-
       let mapping = CreateFileMappingW(
-        file,
+        INVALID_HANDLE_VALUE,
         None,
         PAGE_EXECUTE_READWRITE,
         (size >> 32) as u32,
@@ -118,7 +86,6 @@ impl MemoryExecutableApi for MemoryExecutable {
       Self {
         cursor,
         stored: AtomicUsize::new(0),
-        filehd: file,
         slab: mapping,
         rwview: rw_ptr as _,
         rxview: rx_ptr as _,
@@ -175,7 +142,7 @@ impl MemoryExecutableApi for MemoryExecutable {
     }
   }
 
-  fn release(&mut self) {
+  fn release(&self) {
     let _out = self.stored.fetch_sub(1, Ordering::Relaxed);
     debug_assert!(_out != 0);
   }
@@ -194,7 +161,6 @@ impl MemoryExecutableApi for MemoryExecutable {
         .expect("Could not unmap rx view");
 
         CloseHandle(self.slab).expect("Unable to close handle");
-        CloseHandle(self.filehd).expect("Unable to close, delete file");
       }
 
       forget(self);
