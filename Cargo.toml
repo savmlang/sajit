@@ -20,9 +20,4 @@ windows = { version = "0.62", features = [
 clear-cache = "0.1"
 
 [dev-dependencies]
-inkwell = { version = "0.8.0", default-features = false, features = [
-  "llvm21-1-prefer-static",
-  "target-all",
-] }
-object = { version = "0.39" }
 cranelift = { version = "^0.130", features = ["native"] }
