@@ -19,5 +19,9 @@ pub fn flush_icache(base: *mut c_void, size: usize) -> bool {
   return windows::flush_icache(base, size);
 
   #[cfg(unix)]
-  return unix::flush_icache(base, size);
+  return {
+    unix::flush_icache(base, size);
+
+    true
+  };
 }
