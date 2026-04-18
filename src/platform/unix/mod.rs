@@ -17,9 +17,11 @@ unsafe extern "C" {
     target_os = "linux"
   )
 )]
-pub fn flush_icache(base: *mut c_void, size: usize) {
+pub fn flush_icache(base: *mut c_void, size: usize) -> bool {
   let end = unsafe { base.add(size) };
-  unsafe { __clear_cache(base as _, end as _) }
+  unsafe { __clear_cache(base as _, end as _) };
+
+  true
 }
 
 #[cfg(
