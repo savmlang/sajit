@@ -89,7 +89,7 @@ impl MemoryExecutableApi for MemoryExecutable {
         slab: mapping,
         rwview: rw_ptr as _,
         rxview: rx_ptr as _,
-        size,
+        size: size as usize,
       }
     }
   }
