@@ -57,7 +57,7 @@ unsafe fn relocate(mmap: *mut u8, len: usize, relocation: &Relocation) {
     #[cfg(target_pointer_width = "64")]
     RelocKind::Abs4 => unimplemented!("Unsupported platform"),
     #[cfg(not(target_pointer_width = "64"))]
-    RelocKind::Abs4 => {
+    RelocKind::Abs4 => unsafe {
       debug_assert_eq!(relocation.addend, 0);
       debug_assert!((relocation.offset as usize + 4) <= len);
 
