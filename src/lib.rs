@@ -61,7 +61,7 @@ unsafe fn relocate(mmap: *mut u8, len: usize, relocation: &Relocation) {
       debug_assert_eq!(relocation.addend, 0);
       debug_assert!((relocation.offset as usize + 4) <= len);
 
-      ptr::write_unaligned(patch_site as *mut u32, value);
+      ptr::write_unaligned(patch_site as *mut u32, value as u32);
     }
     #[cfg(not(target_arch = "x86_64"))]
     RelocKind::X86CallPCRel4 | RelocKind::X86PCRel4 => unimplemented!("Unsupported platform"),
