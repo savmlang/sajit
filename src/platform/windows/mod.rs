@@ -3,7 +3,7 @@
 use std::ffi::c_void;
 
 #[link(name = "kernel32")]
-unsafe extern "C" {
+unsafe extern "system" {
   unsafe fn GetCurrentProcess() -> *mut c_void;
   unsafe fn FlushInstructionCache(
     hProcess: *mut c_void,
