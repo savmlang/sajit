@@ -30,7 +30,7 @@ pub enum WriteFnResult {
 }
 
 pub trait MemoryExecutableApi: Sized {
-  const DEFAULT_SLAB_SIZE: u64 = 16 * 1024 * 1024;
+  const DEFAULT_SLAB_SIZE: usize = 16 * 1024 * 1024;
 
   /// Creates a new `16MB` slab to store machine code in
   ///

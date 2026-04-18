@@ -54,7 +54,13 @@ impl MemoryExecutableApi for MemoryExecutable {
         INVALID_HANDLE_VALUE,
         None,
         PAGE_EXECUTE_READWRITE,
-        (size >> 32) as u32,
+        (||{
+          #[cfg(target_pointer_width = "64")]
+          return (size >> 32) as u32;
+
+          #[cfg(target_pointer_width = "64")]
+          return 0;
+        })(),
         size as u32,
         None,
       )
