@@ -58,7 +58,7 @@ impl MemoryExecutableApi for MemoryExecutable {
           #[cfg(target_pointer_width = "64")]
           return (size >> 32) as u32;
 
-          #[cfg(target_pointer_width = "64")]
+          #[cfg(target_pointer_width = "32")]
           return 0;
         })(),
         size as u32,
