@@ -16,7 +16,7 @@ windows = { version = "0.62", features = [
   "Win32_Storage_FileSystem",
 ] }
 
-[target.'cfg(all(any(target_os="linux", target_os="macos"), not(target_arch = "x86_64")))'.dependencies]
+[target.'cfg(all(target_os="macos", not(target_arch = "x86_64")))'.dependencies]
 clear-cache = "0.1"
 
 [dev-dependencies]
