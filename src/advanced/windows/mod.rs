@@ -127,11 +127,7 @@ impl MemoryExecutableApi for MemoryExecutable {
       // Non X64 : Flush ICache
       #[cfg(not(any(target_arch = "x86_64", target_arch = "x86")))]
       {
-        use windows::Win32::System::{
-          Diagnostics::Debug::FlushInstructionCache, Threading::GetCurrentProcess,
-        };
-
-        FlushInstructionCache(GetCurrentProcess(), Some(dst_rx as _), len);
+        crate::platform::flush_icache(dst_rx as _, len);
       }
 
       compiler_fence(Ordering::Release);

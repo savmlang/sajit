@@ -109,7 +109,7 @@ impl MemoryExecutableApi for MemoryExecutable {
       // Non X64 : Flush ICache
       #[cfg(not(any(target_arch = "x86_64", target_arch = "x86")))]
       {
-        clear_cache::clear_cache(dst_rx as _, dst_rx.byte_add(len) as _);
+        crate::platform::flush_icache(dst_rx as _, len);
       }
 
       compiler_fence(Ordering::Release);
