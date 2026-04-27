@@ -147,7 +147,7 @@ unsafe fn relocate(mmap: *mut u8, len: usize, relocation: &Relocation) {
       arm64callhwnd(displacement_bytes);
     }
     #[cfg(target_arch = "aarch64")]
-    RelocKind::Arm64Call => {
+    RelocKind::Arm64CallProvidedRelativeBytes => {
       arm64callhwnd(relocation.symbol_addr.cast_signed());
     }
   }
