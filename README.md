@@ -13,10 +13,10 @@ We support the following executable api:
 
 | Operating System | Arch        | Status | Notes                                  |
 | ---------------- | ----------- | ------ | -------------------------------------- |
-| Windows          | x86_64      | ✅     |                                        |
+| Windows          | x86_64      | ✅ 🥇  |                                        |
 |                  | x86         | 🟨     |                                        |
 |                  | arm64       | ✅     |                                        |
-| Linux            | x86_64      | ✅     |                                        |
+| Linux            | x86_64      | ✅ 🥇  |                                        |
 |                  | x86         | 🟨     |                                        |
 |                  | arm64       | ✅     |                                        |
 |                  | armv7       | 🏗️     |                                        |
@@ -32,7 +32,8 @@ We support the following executable api:
 |                  | arm64       | ❌     |                                        |
 | iOS              | arm64       | ❌     | Experimental, Hacky, not worth it.     |
 
-✅: Guaranteed support
+🥇: Maintainer Environment
+✅: Supported
 🟨: Tests Pending
 🏗️: Hacky
 ❌: Unlikely to be supported
@@ -64,7 +65,7 @@ SaJIT _RELCAR_ is an extensible relocator and the default **BasicRelocator** sho
 
 ## LLVM JITLink
 
-We have a C++ mapping of LLVM JITLink to supprt advanced relocations and linking. This is exposed by the `LLVMJITLink` trait. This is the recommended linker for production projects.
+We have a C++ mapping of LLVM JITLink to support advanced relocations and linking. This is exposed by the `LLVMJITLink` trait. This is the recommended linker for production projects.
 
 **Platform Support:** (LLVM JITLink)[https://llvm.org/docs/JITLink.html#jitlink-availability-and-feature-status]
 
