@@ -2,7 +2,7 @@
 
 **SaJIT** is a Executable Region allocator and linker written in Rust with an extended ObjectFile linker in C++20
 
-It offers a MemoryExecutable interface with a homegrown linker in rust. However, for object files (like what LLVM outputs) we have 2 linkers in C++ (JITLinker, RuntimeDyld) that require C++20 under the `llvm` feature.
+It offers a MemoryExecutable interface with a homegrown linker in Rust. However, for object files (like what LLVM outputs) we have 2 linkers in C++ (JITLinker, RuntimeDyld) that require C++20 under the `llvm` feature.
 
 We support the following executable api:
 
@@ -11,26 +11,28 @@ We support the following executable api:
 <details>
   <summary>OS Platform Support</summary>
 
-| Operating System | Arch        | Status | Notes                                  |
-| ---------------- | ----------- | ------ | -------------------------------------- |
-| Windows          | x86_64      | ✅ 🥇  |                                        |
-|                  | x86         | 🟨     |                                        |
-|                  | arm64       | ✅     |                                        |
-| Linux            | x86_64      | ✅ 🥇  |                                        |
-|                  | x86         | 🟨     |                                        |
-|                  | arm64       | ✅     |                                        |
-|                  | armv7       | 🏗️     |                                        |
-|                  | riscv64     | ✅     |                                        |
-|                  | riscv32     | 🏗️     |                                        |
-|                  | loongarch64 | 🏗️     |                                        |
-| macOS            |             |        | Gatekeeper might block JIT. Be advised |
-|                  | x86_64      | ✅     |                                        |
-|                  | arm64       | ✅     |                                        |
-| Android          | x86_64      | ❌     | Android has unintended friction        |
-|                  | x86         | ❌     | towards memory mapped code due to      |
-|                  | armv7       | ❌     | security reasons.                      |
-|                  | arm64       | ❌     |                                        |
-| iOS              | arm64       | ❌     | Experimental, Hacky, not worth it.     |
+| Operating System | Arch        | Status | Notes                                                                                                      |
+| ---------------- | ----------- | ------ | ---------------------------------------------------------------------------------------------------------- |
+| Windows          | x86_64      | ✅ 🥇  |                                                                                                            |
+|                  | x86         | 🟨     | Testing infrastructure welcome                                                                             |
+|                  | arm64       | ✅     |                                                                                                            |
+| Linux            | x86_64      | ✅ 🥇  |                                                                                                            |
+|                  | x86         | 🟨     | Testing infrastructure welcome                                                                             |
+|                  | arm64       | ✅     |                                                                                                            |
+|                  | armv7       | 🏗️     | Testing infrastructure welcome                                                                             |
+|                  | riscv64     | ✅     |                                                                                                            |
+|                  | riscv32     | 🏗️     | Testing infrastructure welcome                                                                             |
+|                  | loongarch64 | 🏗️     | TODO: Build LLVM loongarch64 [llvm](https://github.com/savmlang/llvm/blob/main/.github/workflows/llvm.yml) |
+|                  | powerpc64le | 🏗️     | Testing infrastructure welcome                                                                             |
+|                  | mips64el    | 🏗️     | Testing infrastructure welcome                                                                             |
+| macOS            |             |        | Gatekeeper might block JIT. Be advised                                                                     |
+|                  | x86_64      | ✅     |                                                                                                            |
+|                  | arm64       | ✅     |                                                                                                            |
+| Android          | x86_64      | ❌     | Android has unintended friction                                                                            |
+|                  | x86         | ❌     | towards memory mapped code due to                                                                          |
+|                  | armv7       | ❌     | security reasons.                                                                                          |
+|                  | arm64       | ❌     |                                                                                                            |
+| iOS              | arm64       | ❌     | Experimental, Hacky, not worth it.                                                                         |
 
 🥇: Maintainer Environment
 ✅: Supported
@@ -40,7 +42,7 @@ We support the following executable api:
 
 </details>
 
-The following the are relocators :
+Available relocators :
 
 - SaJIT RELCAR (Rust)
 - LLVM JITLink (C++)
@@ -67,7 +69,7 @@ SaJIT _RELCAR_ is an extensible relocator and the default **BasicRelocator** sho
 
 We have a C++ mapping of LLVM JITLink to support advanced relocations and linking. This is exposed by the `LLVMJITLink` trait. This is the recommended linker for production projects.
 
-**Platform Support:** (LLVM JITLink)[https://llvm.org/docs/JITLink.html#jitlink-availability-and-feature-status]
+**Platform Support:** [LLVM JITLink](https://llvm.org/docs/JITLink.html#jitlink-availability-and-feature-status)
 
 ## LLVM RuntimeDyld
 
