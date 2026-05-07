@@ -29,13 +29,13 @@ use crate::{
 pub struct MemoryExecutable {
   fd: i32,
   // Views
-  rxview: *const Executable,
-  rwview: *mut u8,
+  pub(crate) rxview: *const Executable,
+  pub(crate) rwview: *mut u8,
 
   // Metadata
-  size: usize,
-  cursor: usize,
-  stored: AtomicUsize,
+  pub(crate) size: usize,
+  pub(crate) cursor: usize,
+  pub(crate) stored: AtomicUsize,
 }
 
 impl MemoryExecutableApi for MemoryExecutable {

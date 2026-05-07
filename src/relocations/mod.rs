@@ -1,3 +1,6 @@
+#[cfg(feature = "llvm")]
+pub mod llvmreloc;
+
 #[repr(C)]
 pub struct Relocation {
   pub addend: i64,

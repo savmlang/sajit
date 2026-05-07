@@ -9,6 +9,7 @@ use std::{
 use libc::{MAP_ANON, MAP_JIT, MAP_PRIVATE, PROT_EXEC, PROT_READ, PROT_WRITE, mmap, munmap};
 
 use crate::{
+  Executable,
   advanced::{MemoryExecutableApi, WriteFnResult},
   relocate,
 };
@@ -30,11 +31,13 @@ unsafe extern "C" {
 pub struct MemoryExecutable {
   // View
   rview: *mut u8,
+  pub(crate) rwview: *mut u8,
+  pub(crate) rxview: *const Executable,
 
   // Metadata
-  size: usize,
-  cursor: usize,
-  stored: AtomicUsize,
+  pub(crate) size: usize,
+  pub(crate) cursor: usize,
+  pub(crate) stored: AtomicUsize,
 }
 
 impl MemoryExecutableApi for MemoryExecutable {
@@ -56,6 +59,8 @@ impl MemoryExecutableApi for MemoryExecutable {
 
       Self {
         rview,
+        rwview: rview,
+        rxview: rview as _,
         size,
         cursor,
         stored: AtomicUsize::new(0),

@@ -1,3 +1,5 @@
+#![feature(iterator_try_collect)]
+
 //! SaJIT Loader
 //!
 //! SaJIT is a handwritten cross-platform cross-architecture hand rolled loader

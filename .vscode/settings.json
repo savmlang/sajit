@@ -1,0 +1,8 @@
+{
+  "rust-analyzer.linkedProjects": ["./Cargo.toml", "./llvmtest/Cargo.toml"],
+  "rust-analyzer.cargo.features": ["sajit/llvm"],
+  "rust-analyzer.cargo.extraEnv": {
+    "LLVM_PATH": "${workspaceFolder}/../llvm__",
+    "LLVM_SYS_211_PREFIX": "${workspaceFolder}/../llvm__"
+  }
+}

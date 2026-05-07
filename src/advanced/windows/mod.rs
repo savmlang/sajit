@@ -35,13 +35,13 @@ pub struct MemoryExecutable {
   slab: HANDLE,
 
   // Views
-  rxview: *const Executable,
-  rwview: *mut u8,
+  pub(crate) rxview: *const Executable,
+  pub(crate) rwview: *mut u8,
 
   // Metadata
-  size: usize,
-  cursor: usize,
-  stored: AtomicUsize,
+  pub(crate) size: usize,
+  pub(crate) cursor: usize,
+  pub(crate) stored: AtomicUsize,
 }
 
 impl MemoryExecutableApi for MemoryExecutable {
@@ -54,7 +54,7 @@ impl MemoryExecutableApi for MemoryExecutable {
         INVALID_HANDLE_VALUE,
         None,
         PAGE_EXECUTE_READWRITE,
-        (||{
+        (|| {
           #[cfg(target_pointer_width = "64")]
           return (size >> 32) as u32;
 
