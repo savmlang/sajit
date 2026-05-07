@@ -1,79 +1,89 @@
 # SaJIT
 
-SaJIT is a handwritten cross-platform cross-architecture hand rolled loader designed to be extremely lean and efficient with incredible relocating precision.
+**SaJIT** is a Executable Region allocator and linker written in Rust with an extended ObjectFile linker in C++20
 
-It is fundamentally a slab allocator - linker combination designed for performance intensive workloads.
+It offers a MemoryExecutable interface with a homegrown linker in rust. However, for object files (like what LLVM outputs) we have 2 linkers in C++ (JITLinker, RuntimeDyld) that require C++20 under the `llvm` feature.
 
-and it uses RX, RW paging system (macOS is an exception)
+We support the following executable api:
 
-It fundamentally deviates from the general norm into high performance computing and uses file-backed pages on platforms like windows
+- MemoryExecutableApi (Rust)
 
-## Platform Support
+<details>
+  <summary>OS Platform Support</summary>
 
-| Operating System | Arch        | Status | Notes                                           |
-| ---------------- | ----------- | ------ | ----------------------------------------------- |
-| Windows          | x86_64      | ✅     | [👇](#x86_64-supported-relocation)              |
-|                  | x86         | 🟨     | [👇](#armv7-x86-riscv32-supported-relocation)   |
-|                  | arm64       | ✅     | [👇](#arm64-supported-relocation)               |
-| Linux            | x86_64      | ✅     | [👇](#x86_64-supported-relocation)              |
-|                  | x86         | 🟨     | [👇](#armv7-x86-riscv32-supported-relocation)   |
-|                  | arm64       | ✅     | [👇](#arm64-supported-relocation)               |
-|                  | armv7       | 🟨     | [👇](#armv7-x86-riscv32-supported-relocation)   |
-|                  | riscv64     | ✅     | [👇](#riscv64-loongarch64-supported-relocation) |
-|                  | riscv32     | 🟨     | [👇](#armv7-x86-riscv32-supported-relocation)   |
-|                  | loongarch64 | 🟨     | [👇](#riscv64-loongarch64-supported-relocation) |
-| macOS            |             |        | Gatekeeper might block JIT. Be advised          |
-|                  | x86_64      | ✅     | [👇](#x86_64-supported-relocation)              |
-|                  | arm64       | ✅     | [👇](#arm64-supported-relocation)               |
-| Android          | x86_64      | ❌     | Android has unintended friction                 |
-|                  | x86         | ❌     | towards memory mapped code due to               |
-|                  | armv7       | ❌     | security reasons.                               |
-|                  | arm64       | ❌     |                                                 |
-| iOS              | arm64       | ❌     | Experimental, Hacky, not worth it.              |
+| Operating System | Arch        | Status | Notes                                  |
+| ---------------- | ----------- | ------ | -------------------------------------- |
+| Windows          | x86_64      | ✅     |                                        |
+|                  | x86         | 🟨     |                                        |
+|                  | arm64       | ✅     |                                        |
+| Linux            | x86_64      | ✅     |                                        |
+|                  | x86         | 🟨     |                                        |
+|                  | arm64       | ✅     |                                        |
+|                  | armv7       | 🏗️     |                                        |
+|                  | riscv64     | ✅     |                                        |
+|                  | riscv32     | 🏗️     |                                        |
+|                  | loongarch64 | 🏗️     |                                        |
+| macOS            |             |        | Gatekeeper might block JIT. Be advised |
+|                  | x86_64      | ✅     |                                        |
+|                  | arm64       | ✅     |                                        |
+| Android          | x86_64      | ❌     | Android has unintended friction        |
+|                  | x86         | ❌     | towards memory mapped code due to      |
+|                  | armv7       | ❌     | security reasons.                      |
+|                  | arm64       | ❌     |                                        |
+| iOS              | arm64       | ❌     | Experimental, Hacky, not worth it.     |
 
 ✅: Guaranteed support
 🟨: Tests Pending
+🏗️: Hacky
 ❌: Unlikely to be supported
 
-## X86_64 Supported Relocation
+</details>
 
-Our JIT Loader only handles the following x86_64 relocations.
+The following the are relocators :
 
-| Name                     | Note                                  |
-| :----------------------- | ------------------------------------- |
-| RelocKind::Abs8          | Uses absolute pointer                 |
-| RelocKind::X86CallPCRel4 | Uses relative pointer, range +-2.1GiB |
-| RelocKind::X86PCRel4     | Uses relative pointer, range +-2.1GiB |
+- SaJIT RELCAR (Rust)
+- LLVM JITLink (C++)
+- LLVM RuntimeDyld (C++)
 
-## Arm64 Supported Relocation
+## SaJIT RELCAR
 
-Our JIT Loader only handles the following aarch64 relocations.
+SaJIT **Rust Efficient reLocator for Configurable Address Relocation** is a simple and single-pass memory relocator that takes simple relocation types (eg. cranelift-codegen) and relocates it.
 
-| Name                 | Note                                  |
-| :------------------- | ------------------------------------- |
-| RelocKind::Abs8      | Uses absolute pointer                 |
-| RelocKind::Arm64Call | Uses relative pointer, range +-128MiB |
+SaJIT _RELCAR_ is an extensible relocator and the default **BasicRelocator** should handle most of simple JIT use case.
 
-# Tier 2 Targets
+### BasicRelocator
 
-## Armv7, X86, Riscv32 Supported Relocation
+| Name                                                | Architecture           | Note                                  | Range   |
+| :-------------------------------------------------- | :--------------------- | ------------------------------------- | ------- |
+| RelocKind::Abs8                                     | x86_64, arm64, riscv64 | `*ptr = addr`                         | FULL    |
+| RelocKind::Abs4                                     | i686, armv7            | `*ptr = addr`                         | FULL    |
+| RelocKind::X86CallPCRel4 or RelocKind::X86PCRel4    | x86_64                 | Relative to `PC+4`                    | ±2GiB   |
+| RelocKind::X86CallPCRelOrPCRelProvidedRelativeBytes | x86_64                 | Directly patches treating addr as i32 | ±2GiB   |
+| RelocKind::Arm64Call                                | arm64                  | B/BL 26-bit immediate only            | ±128MiB |
+| RelocKind::Arm64CallProvidedRelativeBytes           | arm64                  | Directly patches treating addr as i24 | ±128MiB |
 
-Our JIT Loader only handles the following 32-bit relocations.
+## LLVM JITLink
 
-| Name            | Note                  |
-| :-------------- | --------------------- |
-| RelocKind::Abs4 | Uses absolute pointer |
+We have a C++ mapping of LLVM JITLink to supprt advanced relocations and linking. This is exposed by the `LLVMJITLink` trait. This is the recommended linker for production projects.
 
-## Riscv64, Loongarch64 Supported Relocation
+**Platform Support:** (LLVM JITLink)[https://llvm.org/docs/JITLink.html#jitlink-availability-and-feature-status]
 
-Our JIT Loader only handles the following 64-bit relocations.
+## LLVM RuntimeDyld
 
-| Name            | Note                  |
-| :-------------- | --------------------- |
-| RelocKind::Abs8 | Uses absolute pointer |
+We also offer a C++ mapping of LLVM RuntimeDyld as a relocator and linker. This is exposed by the `LLVMRTDyld` trait. This is only recommended as a fallback for `LLVMJITLink`.
 
-## Sidenote
+Supported in both **JITLink** and **RuntimeDyld**:
 
-You do not need to perform relocation calculations. The loader resolves and patches all addresses; you only provide the absolute target address.
+| Format | Arch                                                    |
+| ------ | ------------------------------------------------------- |
+| COFF   | x86-64                                                  |
+| ELF    | aarch32, aarch64, i386, LoongArch, PPC64, RISCV, x86-64 |
+| MachO  | aarch64, x86-64                                         |
 
-Please note that the supported relocation list is generated from our own tests with cranelift-codegen crate for relocations of function `call`s. The names are directly borrowed from their list and we only link a subset of them.
+Supported only in **RuntimeDyld**:
+
+| Format | Arch                   |
+| ------ | ---------------------- |
+| COFF   | aarch32, aarch64, i386 |
+| ELF    | MIPS, PPC32, SPARC     |
+| MachO  | aarch32, i386          |

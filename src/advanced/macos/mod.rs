@@ -11,7 +11,7 @@ use libc::{MAP_ANON, MAP_JIT, MAP_PRIVATE, PROT_EXEC, PROT_READ, PROT_WRITE, mma
 use crate::{
   Executable,
   advanced::{MemoryExecutableApi, WriteFnResult},
-  relocate,
+  relcar::Relcar,
 };
 
 #[link(name = "pthread")]
@@ -37,7 +37,7 @@ pub struct MemoryExecutable {
   // Metadata
   pub(crate) size: usize,
   pub(crate) cursor: usize,
-  pub(crate) stored: AtomicUsize,
+  pub stored: AtomicUsize,
 }
 
 impl MemoryExecutableApi for MemoryExecutable {
@@ -55,7 +55,7 @@ impl MemoryExecutableApi for MemoryExecutable {
         0,
       ) as *mut u8;
 
-      let cursor = rview.align_offset(16);
+      let cursor = rview.align_offset(64);
 
       Self {
         rview,
@@ -72,6 +72,7 @@ impl MemoryExecutableApi for MemoryExecutable {
     &mut self,
     data: &[u8],
     relocs: &[crate::relocations::Relocation],
+    relcar: &Relcar,
   ) -> super::WriteFnResult {
     let len = data.len();
 
@@ -89,7 +90,7 @@ impl MemoryExecutableApi for MemoryExecutable {
 
       // Relocate
       for relocation in relocs {
-        relocate(dst_rw, len, relocation);
+        relcar.relocate(dst_rw, len, relocation);
       }
       pthread_jit_write_protect_np(1);
 
@@ -104,7 +105,7 @@ impl MemoryExecutableApi for MemoryExecutable {
       // 5. Advance cursor + Align for the NEXT function
       let next_raw = start_offset + len;
       // Find out padding
-      let padding = (16 - (next_raw % 16)) % 16;
+      let padding = (64 - (next_raw % 64)) % 64;
       self.cursor = next_raw + padding;
 
       self.stored.fetch_add(1, Ordering::Relaxed);
@@ -114,7 +115,11 @@ impl MemoryExecutableApi for MemoryExecutable {
   }
 
   fn release(&self) {
-    let _old = self.stored.fetch_sub(1, Ordering::Relaxed);
+    unsafe { Self::release_ptr(&self.stored) }
+  }
+
+  unsafe fn release_ptr(stored: &AtomicUsize) {
+    let _old = stored.fetch_sub(1, Ordering::Relaxed);
     debug_assert!(_old != 0);
   }
 

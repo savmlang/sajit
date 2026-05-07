@@ -1,9 +1,9 @@
 #[cfg(windows)]
 mod windows;
 
-use std::num::NonZeroU8;
 #[cfg(feature = "llvm")]
 use std::{borrow::Cow, collections::HashMap};
+use std::{num::NonZeroU8, sync::atomic::AtomicUsize};
 
 #[cfg(feature = "llvm")]
 pub mod llvm;
@@ -26,7 +26,7 @@ mod macos;
 #[cfg(target_os = "macos")]
 pub use macos::*;
 
-use crate::{Executable, relocations::Relocation};
+use crate::{Executable, relcar::Relcar, relocations::Relocation};
 
 pub enum WriteFnResult {
   /// We have ran out of slab to allocate this
@@ -53,12 +53,16 @@ pub trait MemoryExecutableApi: Sized {
   /// Writes a function into the data stream, returns `None` if the 4KB region is filled
   ///
   /// If the region is indeed filled, you're required create a new region, and seal the old region
-  fn write_fn(&mut self, data: &[u8], relocs: &[Relocation]) -> WriteFnResult;
+  fn write_fn(&mut self, data: &[u8], relocs: &[Relocation], relcar: &Relcar) -> WriteFnResult;
 
   /// Makes that the FID can now be safely freed!
   /// We internally have a HashSet of the data and if all of them
   /// get freed, you are eligible to call `free`
   fn release(&self);
+
+  /// Just like release but you provide the pointer
+  /// to `self.stored`
+  unsafe fn release_ptr(stored: &AtomicUsize);
 
   /// Deallocates the memory, file and all of the code stored
   ///

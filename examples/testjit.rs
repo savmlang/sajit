@@ -1,5 +1,3 @@
-use std::mem::transmute;
-
 use cranelift::{
   codegen::{
     Context,
@@ -11,8 +9,10 @@ use cranelift::{
 };
 use sajit::{
   advanced::{MemoryExecutable, MemoryExecutableApi, WriteFnResult},
+  relcar::{BasicRelocator, Relcar},
   relocations::{RelocKind, Relocation},
 };
+use std::mem::transmute;
 
 fn main() {
   let builder = settings::builder();
@@ -107,7 +107,9 @@ fn jit(data: &[u8], reloc: Vec<Relocation>) {
 
     let mut jit = MemoryExecutable::new_slab(None);
 
-    let data = jit.write_fn(data, &reloc);
+    let relcar: Relcar<BasicRelocator> = Relcar::default();
+
+    let data = jit.write_fn(data, &reloc, &relcar);
 
     let code = match data {
       WriteFnResult::Executable(pt) => pt,

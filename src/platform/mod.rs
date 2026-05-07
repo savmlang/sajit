@@ -6,13 +6,27 @@ mod windows;
 #[cfg(unix)]
 mod unix;
 
-#[cfg(target_arch = "x86_64")]
+#[rustfmt::skip]
+#[cfg(
+  any(
+    target_arch = "x86_64",
+    target_arch = "x86",
+  )
+)]
 #[inline(always)]
 pub fn flush_icache(_base: *mut c_void, _size: usize) -> bool {
   true
 }
 
-#[cfg(not(target_arch = "x86_64"))]
+#[rustfmt::skip]
+#[cfg(
+  not(
+    any(
+      target_arch = "x86_64",
+      target_arch = "x86",
+    )
+  )
+)]
 #[inline(always)]
 pub fn flush_icache(base: *mut c_void, size: usize) -> bool {
   #[cfg(windows)]

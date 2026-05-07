@@ -16,7 +16,7 @@ use windows::Win32::{
 use crate::{
   Executable,
   advanced::{MemoryExecutableApi, WriteFnResult},
-  relocate,
+  relcar::Relcar,
 };
 
 /// Unlike [crate::MemoryExecutable]
@@ -41,7 +41,7 @@ pub struct MemoryExecutable {
   // Metadata
   pub(crate) size: usize,
   pub(crate) cursor: usize,
-  pub(crate) stored: AtomicUsize,
+  pub stored: AtomicUsize,
 }
 
 impl MemoryExecutableApi for MemoryExecutable {
@@ -87,7 +87,7 @@ impl MemoryExecutableApi for MemoryExecutable {
       .Value;
 
       // Now advance the cursor to the nearest 16B aligned block
-      let cursor = rx_ptr.align_offset(16);
+      let cursor = rx_ptr.align_offset(64);
 
       Self {
         cursor,
@@ -104,6 +104,7 @@ impl MemoryExecutableApi for MemoryExecutable {
     &mut self,
     data: &[u8],
     relocs: &[crate::relocations::Relocation],
+    relcar: &Relcar,
   ) -> super::WriteFnResult {
     let len = data.len();
 
@@ -121,21 +122,19 @@ impl MemoryExecutableApi for MemoryExecutable {
 
       // Relocate
       for relocation in relocs {
-        relocate(dst_rw, len, relocation);
+        relcar.relocate(dst_rw, len, relocation);
       }
 
       // Non X64 : Flush ICache
-      #[cfg(not(any(target_arch = "x86_64", target_arch = "x86")))]
-      {
-        crate::platform::flush_icache(dst_rx as _, len);
-      }
+      // on X64 = NOOP
+      crate::platform::flush_icache(dst_rx as _, len);
 
       compiler_fence(Ordering::Release);
 
       // 5. Advance cursor + Align for the NEXT function
       let next_raw = start_offset + len;
       // Find out padding
-      let padding = (16 - (next_raw % 16)) % 16;
+      let padding = (64 - (next_raw % 64)) % 64;
       self.cursor = next_raw + padding;
 
       self.stored.fetch_add(1, Ordering::Relaxed);
@@ -145,7 +144,11 @@ impl MemoryExecutableApi for MemoryExecutable {
   }
 
   fn release(&self) {
-    let _out = self.stored.fetch_sub(1, Ordering::Relaxed);
+    unsafe { Self::release_ptr(&self.stored) }
+  }
+
+  unsafe fn release_ptr(stored: &AtomicUsize) {
+    let _out = stored.fetch_sub(1, Ordering::Release);
     debug_assert!(_out != 0);
   }
 
