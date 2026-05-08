@@ -37,6 +37,7 @@ impl LLVMRTDyld for MemoryExecutable {
     let mut rt = RustRTInterface {
       state: &mut data as *mut _ as _,
       getfnPtr: Some(get_fn_ptr::<T>),
+      resolvefnOffset: Some(push_fnptr::<T>),
       allocate: Some(allocate_jit::<T>),
     };
 
@@ -67,6 +68,24 @@ impl LLVMRTDyld for MemoryExecutable {
 
       self.stored.fetch_add(1, Ordering::Relaxed);
       return Ok(data.resolved);
+    }
+  }
+}
+
+unsafe extern "C" fn push_fnptr<T>(state: *mut c_void, ptr: *const i8, size: usize, offset: u64)
+where
+  T: FnMut(*const str) -> usize,
+{
+  unsafe {
+    let state = &mut *(state as *mut DataJITNote<T>);
+
+    if let Ok(symbol) = str::from_utf8(from_raw_parts(ptr as _, size)) {
+      let text = *state.resolved.get(".text").unwrap();
+
+      state
+        .resolved
+        .entry(Box::from(symbol))
+        .or_insert_with(|| text.byte_add(offset as _));
     }
   }
 }

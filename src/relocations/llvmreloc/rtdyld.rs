@@ -103,6 +103,14 @@ pub type getfn_ptr = ::std::option::Option<
     arg3: usize,
   ) -> *mut ::std::os::raw::c_void,
 >;
+pub type offset_ptr = ::std::option::Option<
+  unsafe extern "C" fn(
+    arg1: *mut ::std::os::raw::c_void,
+    arg2: *const ::std::os::raw::c_char,
+    arg3: usize,
+    arg4: ::std::os::raw::c_ulonglong,
+  ),
+>;
 pub type allocate_t = ::std::option::Option<
   unsafe extern "C" fn(
     arg1: *mut ::std::os::raw::c_void,
@@ -115,18 +123,21 @@ pub type allocate_t = ::std::option::Option<
 pub struct RustRTInterface {
   pub state: *mut ::std::os::raw::c_void,
   pub getfnPtr: getfn_ptr,
+  pub resolvefnOffset: offset_ptr,
   pub allocate: allocate_t,
 }
 #[allow(clippy::unnecessary_operation, clippy::identity_op)]
 const _: () = {
-  ["Size of RustRTInterface"][::std::mem::size_of::<RustRTInterface>() - 24usize];
+  ["Size of RustRTInterface"][::std::mem::size_of::<RustRTInterface>() - 32usize];
   ["Alignment of RustRTInterface"][::std::mem::align_of::<RustRTInterface>() - 8usize];
   ["Offset of field: RustRTInterface::state"]
     [::std::mem::offset_of!(RustRTInterface, state) - 0usize];
   ["Offset of field: RustRTInterface::getfnPtr"]
     [::std::mem::offset_of!(RustRTInterface, getfnPtr) - 8usize];
+  ["Offset of field: RustRTInterface::resolvefnOffset"]
+    [::std::mem::offset_of!(RustRTInterface, resolvefnOffset) - 16usize];
   ["Offset of field: RustRTInterface::allocate"]
-    [::std::mem::offset_of!(RustRTInterface, allocate) - 16usize];
+    [::std::mem::offset_of!(RustRTInterface, allocate) - 24usize];
 };
 unsafe extern "C" {
   pub fn link_rtdyld(

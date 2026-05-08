@@ -52,6 +52,16 @@ fn generate_objectfile() -> Vec<u8> {
   let void = ctx.void_type();
   let fn_type = void.fn_type(&[], false);
 
+  {
+    let fun = module.add_function("libcall2", fn_type, None);
+
+    let block = ctx.append_basic_block(fun, "entry2");
+    let builder = ctx.create_builder();
+    builder.position_at_end(block);
+
+    builder.build_return(None).unwrap();
+  }
+
   // Define our function
   let fun = module.add_function("libcall", fn_type, None);
 

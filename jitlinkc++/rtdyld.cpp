@@ -30,6 +30,8 @@ extern "C"
   };
 
   typedef void *(*getfn_ptr)(void *, const char *, size_t);
+  typedef void (*offset_ptr)(void *, const char *, size_t, unsigned long long);
+
   typedef AllocBlockSlice (*allocate_t)(void *, AllocRequest, SectionName);
 
   struct RustRTInterface
@@ -37,6 +39,7 @@ extern "C"
     void *state;
 
     getfn_ptr getfnPtr;
+    offset_ptr resolvefnOffset;
     allocate_t allocate;
   };
 }
@@ -161,6 +164,45 @@ extern "C"
       RTDyld.mapSectionAddress(
           (const void *)rw,
           alloc.rxview);
+    }
+
+    for (auto symbol : objout->symbols())
+    {
+      auto type = symbol.getType();
+
+      if (!type)
+      {
+        consumeError(type.takeError());
+        continue;
+      }
+
+      if (*type != SymbolRef::Type::ST_Function)
+      {
+        continue;
+      }
+
+      auto name = symbol.getName();
+
+      if (!name)
+      {
+        consumeError(name.takeError());
+        continue;
+      }
+
+      auto symbol_addr = symbol.getAddress();
+
+      if (!symbol_addr)
+      {
+        consumeError(symbol_addr.takeError());
+        continue;
+      }
+
+      auto nameptr = name->data();
+      auto namesize = name->size();
+
+      auto offset = *symbol_addr;
+
+      rt->resolvefnOffset(rt->state, nameptr, namesize, offset);
     }
 
     RTDyld.resolveRelocations();

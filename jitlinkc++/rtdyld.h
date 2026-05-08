@@ -24,6 +24,8 @@ extern "C"
   } SectionName;
 
   typedef void *(*getfn_ptr)(void *, const char *, size_t);
+  typedef void (*offset_ptr)(void *, const char *, size_t, unsigned long long);
+
   typedef AllocBlockSlice (*allocate_t)(void *, AllocRequest, SectionName);
 
   typedef struct RustRTInterface
@@ -31,6 +33,7 @@ extern "C"
     void *state;
 
     getfn_ptr getfnPtr;
+    offset_ptr resolvefnOffset;
     allocate_t allocate;
   } RustRTInterface;
 
