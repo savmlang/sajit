@@ -19,7 +19,7 @@ fn llvm_config(args: &[&str]) -> String {
   let program: Cow<'static, OsStr> = if let Some(Ok(path)) = vars.into_iter().find(|v| v.is_ok()) {
     use std::{env::consts::EXE_SUFFIX, path::PathBuf};
 
-    let mut path = PathBuf::from(path);
+    let mut path: PathBuf = PathBuf::from(path);
 
     path.push("bin");
     path.push(format!("llvm-config{}", EXE_SUFFIX));
@@ -29,10 +29,18 @@ fn llvm_config(args: &[&str]) -> String {
     Cow::Borrowed(OsStr::new("llvm-config"))
   };
 
-  let out = Command::new(program)
+  let out = Command::new(&program)
     .args(args)
     .output()
     .expect("llvm-config not found in PATH");
+
+  if !out.status.success() {
+    panic!(
+      "Running `{}` failed. Kindly check if llvm-config correctly runs on your system.\n\nStdErr: {}",
+      program.display(),
+      String::from_utf8_lossy(&out.stderr)
+    );
+  }
 
   String::from_utf8(out.stdout).expect("Invalid UTF8 was provided")
 }

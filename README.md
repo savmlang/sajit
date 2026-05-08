@@ -1,6 +1,6 @@
 # SaJIT
 
-**SaJIT** is a Executable Region allocator and linker written in Rust with an extended ObjectFile linker in C++20
+**SaJIT** is an Executable Region allocator and linker written in Rust with an extended ObjectFile linker in C++20
 
 It offers a MemoryExecutable interface with a homegrown linker in Rust. However, for object files (like what LLVM outputs) we have 2 linkers in C++ (JITLinker, RuntimeDyld) that require C++20 under the `llvm` feature.
 
@@ -90,3 +90,14 @@ Supported only in **RuntimeDyld**:
 | COFF   | aarch32, aarch64, i386 |
 | ELF    | MIPS, PPC32, SPARC     |
 | MachO  | aarch32, i386          |
+
+## 🏗️ Maintainer's Choice
+
+Since the above can be exhausting to decide. Here is a small mental model map to aid in decision making.
+Maintainer [@ahqsoftwares](https://github.com/ahqsoftwares) believes the following is the optimal workflow.
+
+```
+Cranelift (X64, Arm64, Riscv64 ABSOLUTE) = RELCAR
+Object File (X64 ELF/MachO, Arm64 ELF/MachO) = JITLink
+Object File (X64 COFF, Arm64 COFF) = RuntimeDyld
+```
