@@ -1,5 +1,9 @@
 # SaJIT
 
+> Please note that this readme is not AI generated.
+>
+> The emojis are for better navigation purposes only.
+
 **SaJIT** is an Executable Region allocator and linker written in Rust with an extended ObjectFile linker in C++20
 
 It offers a MemoryExecutable interface with a homegrown linker in Rust. However, for object files (like what LLVM outputs) we have 2 linkers in C++ (JITLinker, RuntimeDyld) that require C++20 under the `llvm` feature.
@@ -48,13 +52,13 @@ Available relocators :
 - LLVM JITLink (C++)
 - LLVM RuntimeDyld (C++)
 
-## SaJIT RELCAR
+## 🔨 SaJIT RELCAR
 
 SaJIT **Rust Efficient reLocator for Configurable Address Relocation** is a simple and single-pass memory relocator that takes simple relocation types (eg. cranelift-codegen) and relocates it.
 
 SaJIT _RELCAR_ is an extensible relocator and the default **BasicRelocator** should handle most of simple JIT use case.
 
-### BasicRelocator
+### 📍 BasicRelocator
 
 | Name                                                | Architecture           | Note                                  | Range   |
 | :-------------------------------------------------- | :--------------------- | ------------------------------------- | ------- |
@@ -65,13 +69,13 @@ SaJIT _RELCAR_ is an extensible relocator and the default **BasicRelocator** sho
 | RelocKind::Arm64Call                                | arm64                  | B/BL 26-bit immediate only            | ±128MiB |
 | RelocKind::Arm64CallProvidedRelativeBytes           | arm64                  | Directly patches treating addr as i24 | ±128MiB |
 
-## LLVM JITLink
+## 🔗 LLVM JITLink
 
 We have a C++ mapping of LLVM JITLink to support advanced relocations and linking. This is exposed by the `LLVMJITLink` trait. This is the recommended linker for production projects.
 
 **Platform Support:** [LLVM JITLink](https://llvm.org/docs/JITLink.html#jitlink-availability-and-feature-status)
 
-## LLVM RuntimeDyld
+## 📖 LLVM RuntimeDyld
 
 We also offer a C++ mapping of LLVM RuntimeDyld as a relocator and linker. This is exposed by the `LLVMRTDyld` trait. This is only recommended as a fallback for `LLVMJITLink`.
 
