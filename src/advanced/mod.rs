@@ -78,7 +78,7 @@ pub trait MemoryExecutableApi: Sized {
 
 #[cfg(feature = "llvm")]
 pub trait LLVMJITLink: MemoryExecutableApi {
-  fn write_llvm<T>(
+  fn write_jitlink<T>(
     &mut self,
     symbolpool: &symbpool::LLVMSymbolPool,
     object: &[u8],
@@ -97,48 +97,4 @@ pub trait LLVMRTDyld: MemoryExecutableApi {
   ) -> Result<HashMap<Box<str>, *const Executable>, ()>
   where
     T: FnMut(*const str) -> usize;
-}
-
-#[cfg(feature = "llvm")]
-pub trait LLVMBestLinking: LLVMRTDyld + LLVMJITLink {
-  fn write_llvm<T>(
-    &mut self,
-    symbolpool: &symbpool::LLVMSymbolPool,
-    object: &[u8],
-    resolver: T,
-  ) -> Result<HashMap<Box<str>, *const Executable>, Cow<'static, [Cow<'static, str>]>>
-  where
-    T: FnMut(*const str) -> usize;
-}
-
-#[cfg(feature = "llvm")]
-impl<T: LLVMRTDyld + LLVMJITLink> LLVMBestLinking for T {
-  fn write_llvm<E>(
-    &mut self,
-    symbolpool: &symbpool::LLVMSymbolPool,
-    object: &[u8],
-    resolver: E,
-  ) -> Result<HashMap<Box<str>, *const Executable>, Cow<'static, [Cow<'static, str>]>>
-  where
-    E: FnMut(*const str) -> usize,
-  {
-    #[rustfmt::skip]
-    const USE_RTDYLD: bool = cfg!(
-      any(
-        // Case A: Windows ARM64
-        all(
-          windows,
-          target_arch = "aarch64"
-        )
-      )
-    );
-
-    if USE_RTDYLD {
-      LLVMRTDyld::write_rtdyld(self, object, resolver).map_err(|_| {
-        Cow::Borrowed(&[Cow::Borrowed("Unable to link using LLVMRTDyld")] as &[Cow<'static, str>])
-      })
-    } else {
-      LLVMJITLink::write_llvm(self, symbolpool, object, resolver)
-    }
-  }
 }

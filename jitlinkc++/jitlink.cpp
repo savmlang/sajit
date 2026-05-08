@@ -270,7 +270,9 @@ extern "C"
     {
       // Consume the error to avoid LLVM crashing on unhandled errors
       handleAllErrors(G.takeError(), [&](const ErrorInfoBase &E)
-                      { ctx->notifyFailed(make_error<StringError>(E.message(), inconvertibleErrorCode())); });
+                      { 
+        ctx->notifyFailed(make_error<StringError>(E.message(), inconvertibleErrorCode()));
+        llvm::errs() << E.message(); });
 
       return 1;
     }

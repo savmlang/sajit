@@ -10,7 +10,13 @@ fn main() {
 fn llvm_config(args: &[&str]) -> String {
   use std::{borrow::Cow, env::var, ffi::OsStr, process::Command};
 
-  let program: Cow<'static, OsStr> = if let Ok(path) = var("LLVM_PATH") {
+  let vars = [
+    var("SAJIT_LLVM_PATH"),
+    var("LLVM_SYS_221_PREFIX"),
+    var("LLVM_SYS_211_PREFIX"),
+  ];
+
+  let program: Cow<'static, OsStr> = if let Some(Ok(path)) = vars.into_iter().find(|v| v.is_ok()) {
     use std::{env::consts::EXE_SUFFIX, path::PathBuf};
 
     let mut path = PathBuf::from(path);

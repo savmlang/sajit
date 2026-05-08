@@ -15,7 +15,7 @@ We support the following executable api:
 | ---------------- | ----------- | ------ | ---------------------------------------------------------------------------------------------------------- |
 | Windows          | x86_64      | ✅ 🥇  |                                                                                                            |
 |                  | x86         | 🟨     | Testing infrastructure welcome                                                                             |
-|                  | arm64       | ✅     |                                                                                                            |
+|                  | arm64       | ✅(🟨) | RELCAR support good, no JITLink and minimal RTDyld                                                         |
 | Linux            | x86_64      | ✅ 🥇  |                                                                                                            |
 |                  | x86         | 🟨     | Testing infrastructure welcome                                                                             |
 |                  | arm64       | ✅     |                                                                                                            |

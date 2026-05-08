@@ -1,21 +1,25 @@
 use std::mem::transmute;
 
-use inkwell::OptimizationLevel;
 use inkwell::context::Context;
 use inkwell::module::Linkage;
 use inkwell::targets::{
   CodeModel, FileType, InitializationConfig, RelocMode, Target, TargetMachine,
 };
-use sajit::symbpool::LLVMSymbolPool;
-use sajit::{LLVMBestLinking, MemoryExecutable, MemoryExecutableApi};
+use inkwell::{AddressSpace, OptimizationLevel};
+use sajit::relcar::RELCAR_BASIC;
+// use sajit::symbpool::LLVMSymbolPool;
+use sajit::{LLVMRTDyld, MemoryExecutable, MemoryExecutableApi};
 
 fn main() {
   let object = generate_objectfile();
-  let symbpool = LLVMSymbolPool::new();
+  // let symbpool = LLVMSymbolPool::new();
 
   let mut exec = MemoryExecutable::new_slab(None);
+
+  let _random = exec.write_fn(&[200, 20, 65, 12, 54, 156], &[], &RELCAR_BASIC);
+
   let hmap = exec
-    .write_llvm(&symbpool, &object, |loc| {
+    .write_rtdyld(&object, |loc| {
       unsafe {
         println!("{}", &(*loc));
       }
@@ -51,16 +55,23 @@ fn generate_objectfile() -> Vec<u8> {
   // Define our function
   let fun = module.add_function("libcall", fn_type, None);
 
+  let global_const = module.add_global(ctx.ptr_type(AddressSpace::default()), None, "MODFN");
+  global_const.set_linkage(Linkage::External);
+
   // Declare an external function (this is the key part)
-  let ext = module.add_function("ext", fn_type, Some(Linkage::External));
+  // let ext = module.add_function("ext", fn_type, Some(Linkage::External));
 
   // Build function body
   let block = ctx.append_basic_block(fun, "entry");
   let builder = ctx.create_builder();
   builder.position_at_end(block);
 
+  let ptr = global_const.as_pointer_value();
+  builder
+    .build_indirect_call(fn_type, ptr, &[], "name")
+    .unwrap();
   // Call the external function
-  builder.build_call(ext, &[], "call_ext").unwrap();
+  // builder.build_call(ext, &[], "call_ext").unwrap();
 
   // Return void
   builder.build_return(None).unwrap();
@@ -80,9 +91,9 @@ fn generate_objectfile() -> Vec<u8> {
       &triple,
       cpu,
       features,
-      OptimizationLevel::None,
+      OptimizationLevel::Aggressive,
       RelocMode::Static,
-      CodeModel::Large,
+      CodeModel::Medium,
     )
     .expect("Failed to create target machine");
 

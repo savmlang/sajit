@@ -30,7 +30,7 @@ pub(crate) struct DataJITNote<T: FnMut(*const str) -> usize> {
 }
 
 impl LLVMJITLink for MemoryExecutable {
-  fn write_llvm<T>(
+  fn write_jitlink<T>(
     &mut self,
     symbolpool: &LLVMSymbolPool,
     object: &[u8],
