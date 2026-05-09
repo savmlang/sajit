@@ -82,23 +82,21 @@ impl MemoryExecutableApi for MemoryExecutable {
 
     unsafe {
       let start_offset = self.cursor;
-      let dst_rw = self.rview.byte_add(start_offset);
+      let dst_rwx = self.rview.byte_add(start_offset);
 
       pthread_jit_write_protect_np(0);
       // Copy all the bytes
-      copy_nonoverlapping(data.as_ptr(), dst_rw, len);
+      copy_nonoverlapping(data.as_ptr(), dst_rwx, len);
 
       // Relocate
       for relocation in relocs {
-        relcar.relocate(dst_rw, len, relocation);
+        relcar.relocate(dst_rwx, len, relocation);
       }
       pthread_jit_write_protect_np(1);
 
       // Non X64 : Flush ICache
-      #[cfg(not(any(target_arch = "x86_64", target_arch = "x86")))]
-      {
-        clear_cache::clear_cache(dst_rw as _, dst_rw.byte_add(len) as _);
-      }
+      // X64 : NOOP
+      crate::platform::flush_icache(dst_rwx as _, len);
 
       compiler_fence(Ordering::Release);
 
@@ -110,7 +108,7 @@ impl MemoryExecutableApi for MemoryExecutable {
 
       self.stored.fetch_add(1, Ordering::Relaxed);
 
-      WriteFnResult::Executable(dst_rw as _)
+      WriteFnResult::Executable(dst_rwx as _)
     }
   }
 
