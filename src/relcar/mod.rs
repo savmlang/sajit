@@ -45,9 +45,6 @@ impl<B: Relocator> Relcar<B> {
   pub fn relocate(&self, mmap: *mut u8, len: usize, relocation: &Relocation) {
     let patch_site = unsafe { mmap.add(relocation.offset as _) };
 
-    #[cfg(target_arch = "aarch64")]
-    let arm64callhwnd = |displacement_bytes: i64| {};
-
     let info = RelocInfo {
       mmap,
       len,
