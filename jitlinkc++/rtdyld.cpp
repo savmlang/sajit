@@ -132,8 +132,8 @@ extern "C"
   {
     std::unordered_map<unsigned, AllocBlockSlice> sectionsmap;
 
-    auto MemMgr = new MemoryMgrDyld(rt, &sectionsmap);
-    auto Resolver = new SymbolProvider(rt);
+    auto MemMgr = std::make_unique<MemoryMgrDyld>(rt, &sectionsmap);
+    auto Resolver = std::make_unique<SymbolProvider>(rt);
     RuntimeDyld RTDyld(*MemMgr, *Resolver);
 
     // Create LLVM memory buffer
