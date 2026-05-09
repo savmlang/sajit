@@ -7,11 +7,15 @@ name: DevSkim
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
   schedule:
-    - cron: '22 8 * * 1'
+    - cron: "22 8 * * 1"
+
+permissions:
+  security-events: write
+  contents: read
 
 jobs:
   lint:

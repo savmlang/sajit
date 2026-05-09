@@ -1,4 +1,6 @@
-use std::{collections::HashMap, ffi::c_void, slice::from_raw_parts, sync::atomic::Ordering};
+use std::{
+  collections::HashMap, ffi::c_void, mem::zeroed, slice::from_raw_parts, sync::atomic::Ordering,
+};
 
 use crate::{
   LLVMRTDyld, MemoryExecutable,
@@ -115,6 +117,11 @@ where
       alignment: (req).alignment as _,
     };
     let output = super::allocate_jit::<T>(state, &mut req as _, 1);
+
+    if output.allocs.is_null() {
+      return zeroed();
+    }
+
     let knot1 = *output.allocs;
     super::free_jit(state, output);
 
