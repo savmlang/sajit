@@ -218,7 +218,7 @@ where
 
         Some(out)
       })
-      .try_collect::<Box<_>>();
+      .collect::<Option<Box<_>>>();
 
     if let Some(allocobj) = allocobj {
       if let Some(newcursor) = start_offset.checked_add(size_added) {
