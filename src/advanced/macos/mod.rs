@@ -8,8 +8,10 @@ use std::{
 
 use libc::{MAP_ANON, MAP_JIT, MAP_PRIVATE, PROT_EXEC, PROT_READ, PROT_WRITE, mmap, munmap};
 
+#[cfg(feature = "llvm")]
+use crate::Executable;
+
 use crate::{
-  Executable,
   advanced::{MemoryExecutableApi, WriteFnResult},
   relcar::Relcar,
 };
