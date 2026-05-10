@@ -5,39 +5,39 @@
 extern "C"
 {
 #endif
-  typedef struct AllocBlockSlice
+  typedef struct AllocBlockSliceRTDYLD
   {
     uintptr_t rwview;
     uintptr_t rxview;
-  } AllocBlockSlice;
+  } AllocBlockSliceRTDYLD;
 
-  typedef struct AllocRequest
+  typedef struct AllocRequestRTDYLD
   {
     uintptr_t size;
     unsigned alignment;
-  } AllocRequest;
+  } AllocRequestRTDYLD;
 
-  typedef struct SectionName
+  typedef struct SectionNameRTDYLD
   {
     const char *ptr;
     size_t size;
-  } SectionName;
+  } SectionNameRTDYLD;
 
   typedef void *(*getfn_ptr)(void *, const char *, size_t);
   typedef void (*offset_ptr)(void *, const char *, size_t, unsigned long long);
 
-  typedef AllocBlockSlice (*allocate_t)(void *, AllocRequest, SectionName);
+  typedef AllocBlockSliceRTDYLD (*allocate_t_rtdyld)(void *, AllocRequestRTDYLD, SectionNameRTDYLD);
 
-  typedef struct RustRTInterface
+  typedef struct RustRTInterfaceRTDYLD
   {
     void *state;
 
     getfn_ptr getfnPtr;
     offset_ptr resolvefnOffset;
-    allocate_t allocate;
-  } RustRTInterface;
+    allocate_t_rtdyld allocate;
+  } RustRTInterfaceRTDYLD;
 
-  int link_rtdyld(RustRTInterface *rt, const char *data, size_t size);
+  int link_rtdyld(RustRTInterfaceRTDYLD *rt, const char *data, size_t size);
 
 #ifdef __cplusplus
 }

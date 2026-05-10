@@ -5,57 +5,57 @@
 extern "C"
 {
 #endif
-  typedef struct AllocBlockSlice
+  typedef struct AllocBlockSliceJL
   {
     uintptr_t rwview;
     uintptr_t rxview;
-  } AllocBlockSlice;
+  } AllocBlockSliceJL;
 
-  typedef struct AllocBlockSlices
+  typedef struct AllocBlockSlicesJL
   {
-    AllocBlockSlice *allocs;
+    AllocBlockSliceJL *allocs;
     size_t len;
-  } AllocBlockSlices;
+  } AllocBlockSlicesJL;
 
-  typedef struct AllocRequest
+  typedef struct AllocRequestJL
   {
     size_t size;
     uint64_t alignment;
-  } AllocRequest;
+  } AllocRequestJL;
 
-  typedef uintptr_t (*ptr_t)(void *, const char *, size_t);
+  typedef uintptr_t (*ptr_t_jl)(void *, const char *, size_t);
 
   /// All returned slices MUST refer to a single contiguous allocation.
   /// allocs[0].rxview is treated as the base address.
-  typedef AllocBlockSlices (*alloc_t)(void *, AllocRequest *, size_t);
+  typedef AllocBlockSlicesJL (*alloc_t_jl)(void *, AllocRequestJL *, size_t);
 
   /// This gives a temporary allocated C-Styled String
   /// For preservation, clone it into your addresspace
-  typedef void (*error_cb_t)(void *, const char *msg);
+  typedef void (*error_cb_tjl)(void *, const char *msg);
 
   /// Frees the descriptor
-  typedef void (*free_t)(void *, AllocBlockSlices);
+  typedef void (*free_t_jl)(void *, AllocBlockSlicesJL);
 
   /// A method that stores the pointers happily
-  typedef void (*addr_val)(void *, const char *, uintptr_t, uint64_t);
+  typedef void (*addr_val_jl)(void *, const char *, uintptr_t, uint64_t);
 
   /// This is an allocated interface (preferably stack allocated)
   /// that essentially serves as a VTable for data pointers.
   ///
   /// It must be alive until link_consume_linkctx
-  typedef struct RustMemoryInterface
+  typedef struct RustMemoryInterfaceJL
   {
     void *state;
 
-    ptr_t getfnPtr;
-    alloc_t allocateJIT;
-    free_t freeJITStructure;
-    error_cb_t onError;
-    addr_val storeAddr;
-  } RustMemoryInterface;
+    ptr_t_jl getfnPtr;
+    alloc_t_jl allocateJIT;
+    free_t_jl freeJITStructure;
+    error_cb_tjl onError;
+    addr_val_jl storeAddr;
+  } RustMemoryInterfaceJL;
 
   /// Create a LinkerContext structure
-  void *create_linkctx(RustMemoryInterface *linker);
+  void *create_linkctx(RustMemoryInterfaceJL *linker);
 
   /// Free the LinkerContext structure.
   void free_linkctx(void *ctx_ptr);

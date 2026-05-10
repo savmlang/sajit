@@ -59,8 +59,6 @@ impl MemoryExecutableApi for MemoryExecutable {
         0,
       ) as *mut u8;
 
-      let cursor = rview.align_offset(64);
-
       Self {
         rview,
         #[cfg(feature = "llvm")]
@@ -68,7 +66,7 @@ impl MemoryExecutableApi for MemoryExecutable {
         #[cfg(feature = "llvm")]
         rxview: rview as _,
         size,
-        cursor,
+        cursor: 0,
         stored: AtomicUsize::new(0),
       }
     }
@@ -82,12 +80,13 @@ impl MemoryExecutableApi for MemoryExecutable {
   ) -> super::WriteFnResult {
     let len = data.len();
 
-    if self.cursor + len > self.size {
+    let start_offset = self.cursor.next_multiple_of(16);
+
+    if start_offset + len > self.size {
       return WriteFnResult::OutOfSlab;
     }
 
     unsafe {
-      let start_offset = self.cursor;
       let dst_rwx = self.rview.byte_add(start_offset);
 
       pthread_jit_write_protect_np(0);
@@ -106,11 +105,11 @@ impl MemoryExecutableApi for MemoryExecutable {
 
       compiler_fence(Ordering::Release);
 
-      // 5. Advance cursor + Align for the NEXT function
+      // 5. Advance cursor
       let next_raw = start_offset + len;
-      // Find out padding
-      let padding = (64 - (next_raw % 64)) % 64;
-      self.cursor = next_raw + padding;
+
+      // Let the other section decide alignment
+      self.cursor = next_raw;
 
       self.stored.fetch_add(1, Ordering::Relaxed);
 

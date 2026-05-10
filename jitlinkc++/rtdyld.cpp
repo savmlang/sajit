@@ -11,19 +11,19 @@ using namespace llvm::object;
 
 extern "C"
 {
-  struct AllocBlockSlice
+  struct AllocBlockSliceRTDYLD
   {
     uintptr_t rwview;
     uintptr_t rxview;
   };
 
-  struct AllocRequest
+  struct AllocRequestRTDYLD
   {
     uintptr_t size;
     unsigned alignment;
   };
 
-  struct SectionName
+  struct SectionNameRTDYLD
   {
     const char *ptr;
     size_t size;
@@ -32,7 +32,7 @@ extern "C"
   typedef void *(*getfn_ptr)(void *, const char *, size_t);
   typedef void (*offset_ptr)(void *, const char *, size_t, unsigned long long);
 
-  typedef AllocBlockSlice (*allocate_t)(void *, AllocRequest, SectionName);
+  typedef AllocBlockSliceRTDYLD (*allocate_t)(void *, AllocRequestRTDYLD, SectionNameRTDYLD);
 
   struct RustRTInterface
   {
@@ -47,15 +47,15 @@ extern "C"
 class MemoryMgrDyld : public RuntimeDyld::MemoryManager
 {
   const RustRTInterface *rt;
-  std::unordered_map<unsigned, AllocBlockSlice> *sectionsmap;
+  std::unordered_map<unsigned, AllocBlockSliceRTDYLD> *sectionsmap;
 
   uint8_t *alloc(uintptr_t Size, unsigned Alignment, unsigned SectionID, StringRef Sect)
   {
-    AllocRequest alloc;
+    AllocRequestRTDYLD alloc;
     alloc.alignment = Alignment;
     alloc.size = Size;
 
-    SectionName section;
+    SectionNameRTDYLD section;
     section.ptr = Sect.data();
     section.size = Sect.size();
 
@@ -67,7 +67,7 @@ class MemoryMgrDyld : public RuntimeDyld::MemoryManager
   }
 
 public:
-  MemoryMgrDyld(const RustRTInterface *rt, std::unordered_map<unsigned, AllocBlockSlice> *sectionsmap) : rt(rt), sectionsmap(sectionsmap) {}
+  MemoryMgrDyld(const RustRTInterface *rt, std::unordered_map<unsigned, AllocBlockSliceRTDYLD> *sectionsmap) : rt(rt), sectionsmap(sectionsmap) {}
 
   uint8_t *allocateCodeSection(uintptr_t Size, unsigned Alignment, unsigned SectionID, StringRef Sect)
   {
@@ -130,7 +130,7 @@ extern "C"
 {
   int link_rtdyld(RustRTInterface *rt, const char *data, size_t size)
   {
-    std::unordered_map<unsigned, AllocBlockSlice> sectionsmap;
+    std::unordered_map<unsigned, AllocBlockSliceRTDYLD> sectionsmap;
 
     auto MemMgr = std::make_unique<MemoryMgrDyld>(rt, &sectionsmap);
     auto Resolver = std::make_unique<SymbolProvider>(rt);

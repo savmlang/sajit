@@ -17,10 +17,11 @@ windows = { version = "^0.62", features = [
 ] }
 
 [build-dependencies]
+bindgen = { version = "^0.72", optional = true }
 cc = { version = "^1", optional = true }
 
 [dev-dependencies]
 cranelift = { version = "^0.131", features = ["native"] }
 
 [features]
-llvm = ["dep:cc"]
+llvm = ["dep:cc", "dep:bindgen"]

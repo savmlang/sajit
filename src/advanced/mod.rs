@@ -77,6 +77,18 @@ pub trait MemoryExecutableApi: Sized {
 }
 
 #[cfg(feature = "llvm")]
+pub trait LLVMDryRun: MemoryExecutableApi {
+  /// Returns the size aligned to the next multiple of 64
+  fn size_jitlink(&mut self, object: &[u8]) -> Option<usize>;
+
+  /// Returns the size aligned to the next multiple of 64
+  fn size_rtdylb(&mut self, object: &[u8]) -> Option<usize>;
+
+  /// Does the MemoryExecutable have enough size
+  fn under_size(&mut self, size: usize) -> Option<bool>;
+}
+
+#[cfg(feature = "llvm")]
 pub trait LLVMJITLink: MemoryExecutableApi {
   fn write_jitlink<T>(
     &mut self,

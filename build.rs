@@ -47,9 +47,21 @@ fn llvm_config(args: &[&str]) -> String {
 
 #[cfg(feature = "llvm")]
 fn jitlink_llvm() {
+  use cc::Build;
+  use std::{env, path::PathBuf};
+
   println!("cargo::rerun-if-changed=jitlinkc++");
 
-  use cc::Build;
+  let bindings = bindgen::Builder::default()
+    .header("jitlinkc++/jitlinkc++.h")
+    .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
+    .generate()
+    .expect("Unable to generate bindings");
+
+  let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
+  bindings
+    .write_to_file(out_path.join("bindings.rs"))
+    .expect("Couldn't write bindings!");
 
   let include_llvm = llvm_config(&["--includedir"]);
 
@@ -59,6 +71,8 @@ fn jitlink_llvm() {
     .std("c++20")
     .file("./jitlinkc++/jitlink.cpp")
     .file("./jitlinkc++/rtdyld.cpp")
+    .file("./jitlinkc++/calcrtdyld.cpp")
+    .file("./jitlinkc++/calcsize.cpp")
     .include("jitlinkc++")
     .include(include_llvm.trim())
     .compile("sajitlink");

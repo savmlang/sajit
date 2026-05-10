@@ -1,3 +1,4 @@
+pub mod jitlinkdry;
 pub mod rtdyld;
 
 use std::{
@@ -7,8 +8,8 @@ use std::{
 
 use crate::{
   Executable, LLVMJITLink, MemoryExecutable,
-  relocations::llvmreloc::jitlink::{
-    AllocBlockSlice, AllocBlockSlices, AllocRequest, RustMemoryInterface, create_linkctx,
+  relocations::llvmreloc::{
+    AllocBlockSliceJL, AllocBlockSlicesJL, AllocRequestJL, RustMemoryInterfaceJL, create_linkctx,
     link_consume_linkctx,
   },
   symbpool::LLVMSymbolPool,
@@ -49,7 +50,7 @@ impl LLVMJITLink for MemoryExecutable {
       resolved: HashMap::new(),
     };
 
-    let mut rustmem = RustMemoryInterface {
+    let mut rustmem = RustMemoryInterfaceJL {
       state: &mut data as *mut _ as _,
       allocateJIT: Some(allocate_jit::<T>),
       freeJITStructure: Some(free_jit),
@@ -155,7 +156,7 @@ where
   .unwrap_or_default()
 }
 
-unsafe extern "C" fn free_jit(_: *mut c_void, req: AllocBlockSlices) {
+unsafe extern "C" fn free_jit(_: *mut c_void, req: AllocBlockSlicesJL) {
   if !req.allocs.is_null() {
     unsafe {
       let slice = std::ptr::slice_from_raw_parts_mut(req.allocs, req.len);
@@ -166,9 +167,9 @@ unsafe extern "C" fn free_jit(_: *mut c_void, req: AllocBlockSlices) {
 
 unsafe extern "C" fn allocate_jit<T>(
   state: *mut c_void,
-  req: *mut AllocRequest,
+  req: *mut AllocRequestJL,
   len: usize,
-) -> AllocBlockSlices
+) -> AllocBlockSlicesJL
 where
   T: FnMut(*const str) -> usize,
 {
@@ -183,7 +184,7 @@ where
     let mut rw_dst = mexec.rwview.byte_add(start_offset);
     let mut rx_dst = mexec.rxview.byte_add(start_offset);
 
-    let mut out = AllocBlockSlices {
+    let mut out = AllocBlockSlicesJL {
       allocs: null_mut(),
       len: 0,
     };
@@ -208,7 +209,7 @@ where
         rw_dst.addr().checked_add(addend)?;
         rx_dst.addr().checked_add(addend)?;
 
-        let out = AllocBlockSlice {
+        let out = AllocBlockSliceJL {
           rwview: rw_dst.byte_add(align).addr(),
           rxview: rx_dst.byte_add(align).addr(),
         };

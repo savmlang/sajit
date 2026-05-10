@@ -6,8 +6,8 @@ use crate::{
   LLVMRTDyld, MemoryExecutable,
   llvm::DataJITNote,
   relocations::llvmreloc::{
-    jitlink,
-    rtdyld::{AllocBlockSlice, AllocRequest, RustRTInterface, SectionName, link_rtdyld},
+    AllocBlockSliceRTDYLD, AllocRequestJL, AllocRequestRTDYLD, RustRTInterfaceRTDYLD,
+    SectionNameRTDYLD, link_rtdyld,
   },
 };
 
@@ -36,7 +36,7 @@ impl LLVMRTDyld for MemoryExecutable {
       resolved: HashMap::new(),
     };
 
-    let mut rt = RustRTInterface {
+    let mut rt = RustRTInterfaceRTDYLD {
       state: &mut data as *mut _ as _,
       getfnPtr: Some(get_fn_ptr::<T>),
       resolvefnOffset: Some(push_fnptr::<T>),
@@ -105,14 +105,14 @@ where
 
 unsafe extern "C" fn allocate_jit<T>(
   state: *mut c_void,
-  req: AllocRequest,
-  name: SectionName,
-) -> AllocBlockSlice
+  req: AllocRequestRTDYLD,
+  name: SectionNameRTDYLD,
+) -> AllocBlockSliceRTDYLD
 where
   T: FnMut(*const str) -> usize,
 {
   unsafe {
-    let mut req = jitlink::AllocRequest {
+    let mut req = AllocRequestJL {
       size: (req).size,
       alignment: (req).alignment as _,
     };
@@ -132,7 +132,7 @@ where
         .insert(Box::from(data), knot1.rxview as _);
     }
 
-    AllocBlockSlice {
+    AllocBlockSliceRTDYLD {
       rwview: knot1.rwview,
       rxview: knot1.rxview,
     }

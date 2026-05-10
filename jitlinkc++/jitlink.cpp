@@ -7,27 +7,27 @@ using namespace llvm::jitlink;
 
 extern "C"
 {
-  struct AllocBlockSlice
+  struct AllocBlockSliceJL
   {
     uintptr_t rwview;
     uintptr_t rxview;
   };
 
-  struct AllocBlockSlices
+  struct AllocBlockSlicesJL
   {
-    AllocBlockSlice *allocs;
+    AllocBlockSliceJL *allocs;
     size_t len;
   };
 
-  struct AllocRequest
+  struct AllocRequestJL
   {
     size_t size;
     uint64_t alignment;
   };
 
   typedef uintptr_t (*ptr_t)(void *, const char *, size_t);
-  typedef AllocBlockSlices (*alloc_t)(void *, AllocRequest *, size_t);
-  typedef void (*free_t)(void *, AllocBlockSlices);
+  typedef AllocBlockSlicesJL (*alloc_t)(void *, AllocRequestJL *, size_t);
+  typedef void (*free_t)(void *, AllocBlockSlicesJL);
   typedef void (*error_cb_t)(void *, const char *);
   typedef void (*addr_val)(void *, const char *, uintptr_t, uint64_t);
 
@@ -75,18 +75,18 @@ public:
 
   void allocate(const JITLinkDylib *dylib, LinkGraph &G, OnAllocatedFunction onAlloc) override
   {
-    std::vector<AllocRequest> Sizes = {};
+    std::vector<AllocRequestJL> Sizes = {};
 
     auto blocks = G.blocks();
     for (auto Block : blocks)
     {
-      AllocRequest alloc;
+      AllocRequestJL alloc;
       alloc.alignment = std::max((uint64_t)1, Block->getAlignment());
       alloc.size = Block->getSize();
 
       Sizes.push_back(alloc);
     }
-    AllocRequest *pointerElm = static_cast<AllocRequest *>(Sizes.data());
+    AllocRequestJL *pointerElm = static_cast<AllocRequestJL *>(Sizes.data());
     size_t len = Sizes.size();
 
     // Let rust figure it all out
@@ -98,7 +98,7 @@ public:
       return;
     }
 
-    std::span<AllocBlockSlice> allocsSpan(pointer.allocs, pointer.len);
+    std::span<AllocBlockSliceJL> allocsSpan(pointer.allocs, pointer.len);
     // Push the new addresses
     size_t idx = 0;
     for (auto block : blocks)

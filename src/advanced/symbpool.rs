@@ -1,6 +1,6 @@
 use std::{ffi::c_void, ptr::NonNull};
 
-use crate::relocations::llvmreloc::jitlink::{create_symbolpool, free_symbolpool};
+use crate::relocations::llvmreloc::{create_symbolpool, free_symbolpool};
 
 pub struct LLVMSymbolPool {
   pub(crate) symbpool: NonNull<c_void>,

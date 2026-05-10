@@ -69,14 +69,12 @@ impl MemoryExecutableApi for MemoryExecutable {
         0,
       );
 
-      let cursor = rx_ptr.align_offset(64);
-
       Self {
         fd,
         rxview: rx_ptr as _,
         rwview: rw_ptr as _,
         size,
-        cursor, // Simplified: align this in your write_fn
+        cursor: 0,
         stored: AtomicUsize::new(0),
       }
     }
@@ -90,12 +88,13 @@ impl MemoryExecutableApi for MemoryExecutable {
   ) -> super::WriteFnResult {
     let len = data.len();
 
-    if self.cursor + len > self.size {
+    let start_offset = self.cursor.next_multiple_of(16);
+
+    if start_offset + len > self.size {
       return WriteFnResult::OutOfSlab;
     }
 
     unsafe {
-      let start_offset = self.cursor;
       let dst_rw = self.rwview.byte_add(start_offset);
       let dst_rx = self.rxview.byte_add(start_offset);
 
@@ -113,11 +112,11 @@ impl MemoryExecutableApi for MemoryExecutable {
 
       compiler_fence(Ordering::Release);
 
-      // 5. Advance cursor + Align for the NEXT function
+      // 5. Advance cursor
       let next_raw = start_offset + len;
-      // Find out padding
-      let padding = (64 - (next_raw % 64)) % 64;
-      self.cursor = next_raw + padding;
+
+      // Let the other section decide alignment
+      self.cursor = next_raw;
 
       self.stored.fetch_add(1, Ordering::Relaxed);
 
