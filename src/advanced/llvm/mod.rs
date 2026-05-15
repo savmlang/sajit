@@ -2,7 +2,7 @@ pub mod jitlinkdry;
 pub mod rtdyld;
 
 use std::{
-  borrow::Cow, collections::HashMap, ffi::c_void, ptr::null_mut, slice::from_raw_parts, str,
+  borrow::Cow, collections::HashMap, ffi::{c_void, c_char}, ptr::null_mut, slice::from_raw_parts, str,
   sync::atomic::Ordering,
 };
 
@@ -104,7 +104,7 @@ impl LLVMJITLink for MemoryExecutable {
   }
 }
 
-unsafe extern "C" fn store_ptr<T>(state: *mut c_void, ptr: *const i8, len: usize, store_addr: u64)
+unsafe extern "C" fn store_ptr<T>(state: *mut c_void, ptr: *const c_char, len: usize, store_addr: u64)
 where
   T: FnMut(*const str) -> usize,
 {
@@ -121,7 +121,7 @@ where
   }
 }
 
-unsafe extern "C" fn on_err<T>(state: *mut c_void, ptr: *const i8)
+unsafe extern "C" fn on_err<T>(state: *mut c_void, ptr: *const c_char)
 where
   T: FnMut(*const str) -> usize,
 {
@@ -137,7 +137,7 @@ where
   }
 }
 
-unsafe extern "C" fn get_fn_ptr<T>(state: *mut c_void, ptr: *const i8, size: usize) -> usize
+unsafe extern "C" fn get_fn_ptr<T>(state: *mut c_void, ptr: *const c_char, size: usize) -> usize
 where
   T: FnMut(*const str) -> usize,
 {

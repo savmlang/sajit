@@ -1,7 +1,3 @@
-use std::{
-  collections::HashMap, ffi::c_void, mem::zeroed, slice::from_raw_parts, sync::atomic::Ordering,
-};
-
 use crate::{
   LLVMRTDyld, MemoryExecutable,
   llvm::DataJITNote,
@@ -9,6 +5,13 @@ use crate::{
     AllocBlockSliceRTDYLD, AllocRequestJL, AllocRequestRTDYLD, RustRTInterfaceRTDYLD,
     SectionNameRTDYLD, link_rtdyld,
   },
+};
+use std::{
+  collections::HashMap,
+  ffi::{c_char, c_void},
+  mem::zeroed,
+  slice::from_raw_parts,
+  sync::atomic::Ordering,
 };
 
 #[cfg(target_os = "macos")]
@@ -74,7 +77,7 @@ impl LLVMRTDyld for MemoryExecutable {
   }
 }
 
-unsafe extern "C" fn push_fnptr<T>(state: *mut c_void, ptr: *const i8, size: usize, offset: u64)
+unsafe extern "C" fn push_fnptr<T>(state: *mut c_void, ptr: *const c_char, size: usize, offset: u64)
 where
   T: FnMut(*const str) -> usize,
 {
@@ -92,7 +95,11 @@ where
   }
 }
 
-unsafe extern "C" fn get_fn_ptr<T>(state: *mut c_void, ptr: *const i8, size: usize) -> *mut c_void
+unsafe extern "C" fn get_fn_ptr<T>(
+  state: *mut c_void,
+  ptr: *const c_char,
+  size: usize,
+) -> *mut c_void
 where
   T: FnMut(*const str) -> usize,
 {
