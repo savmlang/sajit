@@ -24,7 +24,7 @@ extern "C"
   } SectionNameRTDYLD;
 
   typedef void *(*getfn_ptr)(void *, const char *, size_t);
-  typedef void (*offset_ptr)(void *, const char *, size_t, unsigned long long);
+  typedef void (*offset_ptr)(void *, const char *, size_t, unsigned);
 
   typedef AllocBlockSliceRTDYLD (*allocate_t_rtdyld)(void *, AllocRequestRTDYLD, SectionNameRTDYLD);
 
