@@ -94,7 +94,7 @@ public:
 
     if (pointer.len == 0 || !pointer.allocs)
     {
-      onAlloc(Error::Error(make_error<StringError>("Could not allocate", inconvertibleErrorCode())));
+      onAlloc(make_error<StringError>("Could not allocate", inconvertibleErrorCode()));
       return;
     }
 

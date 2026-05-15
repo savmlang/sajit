@@ -67,7 +67,6 @@ fn jitlink_llvm() {
 
   Build::new()
     .cpp(true)
-    .static_crt(true)
     .std("c++20")
     .file("./jitlinkc++/jitlink.cpp")
     .file("./jitlinkc++/rtdyld.cpp")
