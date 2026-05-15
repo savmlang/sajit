@@ -19,7 +19,12 @@ public:
 
   uint8_t *alloc(uintptr_t Size, unsigned Alignment, unsigned SectionID, StringRef Sect)
   {
-    auto allocation = _aligned_malloc(Size, Alignment);
+#ifdef _MSC_VER
+    void *allocation = _aligned_malloc(Size, Alignment);
+#else
+    void *allocation = aligned_alloc(Alignment, Size);
+#endif
+
     allocs.push_back(allocation);
 
     SizeAlignCS algnt;
@@ -39,7 +44,11 @@ public:
   {
     for (auto alloc : allocs)
     {
+#ifdef _MSC_VER
       _aligned_free(alloc);
+#else
+      free(alloc);
+#endif
     }
   }
 
