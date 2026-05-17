@@ -3,6 +3,7 @@ name = "sajit"
 description = "Good Enough JIT Code Slab Allocator, Relocator, Linker interface"
 version = "0.0.1"
 edition = "2024"
+rust-version = "1.95"
 
 [dependencies]
 libc = "^0.2"

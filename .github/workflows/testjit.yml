@@ -69,6 +69,7 @@ jobs:
       fail-fast: true
 
       matrix:
+        toolchain: [stable, nightly]
         target:
           - riscv64gc-unknown-linux-gnu
 
@@ -79,7 +80,7 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: nightly
+          toolchain: ${{ matrix.toolchain }}
 
       - name: Setup Cross
         run: |
@@ -95,6 +96,7 @@ jobs:
       fail-fast: true
 
       matrix:
+        toolchain: [stable, nightly]
         os:
           [
             windows-11-arm,
@@ -114,7 +116,7 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: nightly
+          toolchain: ${{ matrix.toolchain }}
 
       - name: Run Codegen
         run: cargo run --example testjit
