@@ -96,7 +96,8 @@ fn platform_check() {
             target_arch = "arm", 
             target_arch = "riscv32", 
             target_arch = "riscv64", 
-            target_arch = "loongarch64"
+            target_arch = "loongarch64",
+            target_arch = "powerpc64"
         ))
       )
     )
@@ -104,7 +105,7 @@ fn platform_check() {
   compile_error!(
   "This package only works for:
  - Windows (x86_64, x86, aarch64)
- - Linux (arm, aarch64, x86_64, x86, loongarch64, riscv32, riscv64
+ - Linux (arm, aarch64, x86_64, x86, loongarch64, riscv32, riscv64, powerpc64)
  - MacOS (x86_64, aarch64)
   ");
 }
