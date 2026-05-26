@@ -28,7 +28,7 @@ bindgen = { git = "https://github.com/chrysn-pull-requests/rust-bindgen", branch
 cc = { version = "^1", optional = true }
 
 [dev-dependencies]
-cranelift = { version = "^0.131", features = ["native"] }
+cranelift = { version = "^0.132", features = ["native"] }
 
 [features]
 llvm = ["dep:cc", "dep:bindgen"]

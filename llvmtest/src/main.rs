@@ -1,4 +1,5 @@
 use std::mem::transmute;
+use std::ops::Sub;
 
 use inkwell::context::Context;
 use inkwell::module::Linkage;
@@ -7,25 +8,36 @@ use inkwell::targets::{
 };
 use inkwell::{AddressSpace, OptimizationLevel};
 use sajit::relcar::RELCAR_BASIC;
-// use sajit::symbpool::LLVMSymbolPool;
-use sajit::{LLVMRTDyld, MemoryExecutable, MemoryExecutableApi};
+use sajit::symbpool::LLVMSymbolPool;
+use sajit::{
+  LLVMDryRun, LLVMJITLink, MemoryExecutable, MemoryExecutableApi, MemorySizeInfo, WriteFnResult,
+};
 
 fn main() {
   let object = generate_objectfile();
-  // let symbpool = LLVMSymbolPool::new();
+  let symbpool = LLVMSymbolPool::new();
 
   let mut exec = MemoryExecutable::new_slab(None);
 
-  let _random = exec.write_fn(&[200, 20, 65, 12, 54, 156], &[], &RELCAR_BASIC);
+  let plt = (call as *const ()).addr().to_ne_bytes();
+  let plt_addr = match exec.write_fn(&plt, &[], &RELCAR_BASIC) {
+    WriteFnResult::Executable(e) => e,
+    _ => unreachable!(),
+  };
 
+  let o = exec.cursor();
+  let est = MemoryExecutable::sizecalc_jitlink(&symbpool, &object);
   let hmap = exec
-    .write_rtdyld(&object, |loc| {
+    .write_jitlink(&symbpool, &object, |loc| {
       unsafe {
         println!("{}", &(*loc));
       }
-      call as *const () as usize
+      (plt_addr) as usize
     })
     .unwrap();
+  let written = exec.cursor().sub(o);
+
+  println!("Estimated : {est:?}, Found : {written}");
 
   println!("{hmap:?}");
   unsafe {
@@ -66,7 +78,7 @@ fn generate_objectfile() -> Vec<u8> {
   let fun = module.add_function("libcall", fn_type, None);
 
   let global_const = module.add_global(ctx.ptr_type(AddressSpace::default()), None, "MODFN");
-  global_const.set_linkage(Linkage::External);
+  global_const.set_linkage(Linkage::DLLImport);
 
   // Declare an external function (this is the key part)
   // let ext = module.add_function("ext", fn_type, Some(Linkage::External));
@@ -77,8 +89,12 @@ fn generate_objectfile() -> Vec<u8> {
   builder.position_at_end(block);
 
   let ptr = global_const.as_pointer_value();
+  let ptr_to_fn = builder
+    .build_load(ctx.ptr_type(AddressSpace::default()), ptr, "indirectfn")
+    .unwrap()
+    .into_pointer_value();
   builder
-    .build_indirect_call(fn_type, ptr, &[], "name")
+    .build_indirect_call(fn_type, ptr_to_fn, &[], "name")
     .unwrap();
   // Call the external function
   // builder.build_call(ext, &[], "call_ext").unwrap();

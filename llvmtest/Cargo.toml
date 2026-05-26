@@ -5,8 +5,8 @@ edition = "2024"
 
 [dependencies]
 inkwell = { version = "0.9.0", default-features = false, features = [
-  "llvm21-1-force-static",
-  "target-all",
+  "llvm22-1-force-static",
+  "target-x86",
 ] }
 sajit = { version = "^0", path = "..", features = ["llvm"] }
 

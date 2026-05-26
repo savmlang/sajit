@@ -2,7 +2,7 @@
 mod windows;
 
 #[cfg(feature = "llvm")]
-use std::{borrow::Cow, collections::HashMap};
+use std::{borrow::Cow, collections::HashMap, num::NonZeroU64};
 use std::{num::NonZeroU8, sync::atomic::AtomicUsize};
 
 #[cfg(feature = "llvm")]
@@ -76,16 +76,33 @@ pub trait MemoryExecutableApi: Sized {
   fn leak(self) -> ();
 }
 
+pub trait MemorySizeInfo {
+  fn size(&self) -> usize;
+  fn cursor(&self) -> usize;
+}
+
+impl MemorySizeInfo for MemoryExecutable {
+  fn cursor(&self) -> usize {
+    self.cursor
+  }
+
+  fn size(&self) -> usize {
+    self.size
+  }
+}
+
 #[cfg(feature = "llvm")]
 pub trait LLVMDryRun: MemoryExecutableApi {
-  /// Returns the size aligned to the next multiple of 64
-  fn size_jitlink(&mut self, object: &[u8]) -> Option<usize>;
+  /// Returns an approximated best-effort size (atmost size)
+  /// by parsing the objectfile
+  fn sizecalc(object: &[u8]) -> Option<NonZeroU64>;
 
-  /// Returns the size aligned to the next multiple of 64
-  fn size_rtdylb(&mut self, object: &[u8]) -> Option<usize>;
+  /// Returns an much more accurate best-effort size (atmost size)
+  /// by parsing the objectfile
+  fn sizecalc_jitlink(symbolpool: &symbpool::LLVMSymbolPool, object: &[u8]) -> Option<NonZeroU64>;
 
   /// Does the MemoryExecutable have enough size
-  fn under_size(&mut self, size: usize) -> Option<bool>;
+  fn under_size(&self, size: usize) -> Option<bool>;
 }
 
 #[cfg(feature = "llvm")]

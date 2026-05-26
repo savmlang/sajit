@@ -1,42 +1,29 @@
-use std::{ffi::c_void, slice::from_raw_parts};
+use std::num::NonZeroU64;
 
 use crate::{
   LLVMDryRun, MemoryExecutable,
-  relocations::llvmreloc::{SizeAlignInfoCS, rtdyld_dryrun},
+  relocations::llvmreloc::{calc, calc_jitlink},
+  symbpool::LLVMSymbolPool,
 };
 
 impl LLVMDryRun for MemoryExecutable {
-  fn size_jitlink(&mut self, object: &[u8]) -> Option<usize> {
-    let mut size = None;
+  fn sizecalc(object: &[u8]) -> Option<NonZeroU64> {
+    let len = unsafe { calc(object.as_ptr() as _, object.len()) };
+    NonZeroU64::new(len)
+  }
 
-    unsafe {
-      rtdyld_dryrun(
-        &mut size as *mut _ as _,
-        Some(sizealign),
+  fn sizecalc_jitlink(symbolpool: &LLVMSymbolPool, object: &[u8]) -> Option<NonZeroU64> {
+    let len = unsafe {
+      calc_jitlink(
+        symbolpool.symbpool.as_ptr(),
         object.as_ptr() as _,
         object.len(),
       )
     };
-
-    size
+    NonZeroU64::new(len)
   }
 
-  fn size_rtdylb(&mut self, object: &[u8]) -> Option<usize> {
-    let mut size = None;
-
-    unsafe {
-      rtdyld_dryrun(
-        &mut size as *mut _ as _,
-        Some(sizealign),
-        object.as_ptr() as _,
-        object.len(),
-      );
-    };
-
-    size
-  }
-
-  fn under_size(&mut self, size: usize) -> Option<bool> {
+  fn under_size(&self, size: usize) -> Option<bool> {
     Some(
       self
         .cursor
@@ -44,28 +31,5 @@ impl LLVMDryRun for MemoryExecutable {
         .checked_add(size)?
         <= self.size,
     )
-  }
-}
-
-extern "C" fn sizealign(state: *mut c_void, sizealigninfo: SizeAlignInfoCS) {
-  unsafe {
-    let src = from_raw_parts(sizealigninfo.ptr, sizealigninfo.size);
-
-    let val = (|| {
-      const DANGLING_DEFAULT: usize = 1;
-
-      // Size from a reference 1B aligned DANGLING pointer
-      let mut fakeptr: usize = DANGLING_DEFAULT;
-
-      for sizeitem in src {
-        fakeptr = fakeptr.checked_next_multiple_of(sizeitem.align.max(1) as _)?;
-
-        fakeptr = fakeptr.checked_add(sizeitem.size)?;
-      }
-
-      (fakeptr.checked_sub(DANGLING_DEFAULT)?).checked_next_multiple_of(DANGLING_DEFAULT)
-    })();
-
-    *(state as *mut Option<usize>) = val;
   }
 }
