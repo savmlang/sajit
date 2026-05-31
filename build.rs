@@ -65,15 +65,27 @@ fn jitlink_llvm() {
 
   let include_llvm = llvm_config(&["--includedir"]);
 
-  Build::new()
+  let mut build = Build::new();
+
+  build
     .cpp(true)
     .std("c++20")
     .file("./jitlinkc++/jitlink.cpp")
     .file("./jitlinkc++/rtdyld.cpp")
     .file("./jitlinkc++/objcalc.cpp")
     .include("jitlinkc++")
-    .include(include_llvm.trim())
-    .compile("sajitlink");
+    .include(include_llvm.trim());
+
+  let target_arch = std::env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default();
+  let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+
+  if target_os == "linux"
+    && (target_arch == "powerpc64le" || target_arch == "powerpc64" || target_arch == "riscv64")
+  {
+    build.flag("-fno-rtti");
+  }
+
+  build.compile("sajitlink");
 }
 
 #[rustfmt::skip]
