@@ -33,7 +33,7 @@ extern "C"
     delete[] slices.allocs;
   }
 
-  unsigned long long getfn(void *state, const char *name, size_t len)
+  uintptr_t getfn(void *state, const char *name, size_t len)
   {
     return 0;
   }
