@@ -79,8 +79,7 @@ fn jitlink_llvm() {
   let target_arch = std::env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default();
   let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
 
-  if target_os == "linux"
-    && (target_arch == "powerpc64le" || target_arch == "powerpc64" || target_arch == "riscv64")
+  if target_os == "linux" || target_os == "darwin"
   {
     build.flag("-fno-rtti");
   }
