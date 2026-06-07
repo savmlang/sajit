@@ -111,7 +111,6 @@ extern "C"
 
     if (datastate.alloc)
     {
-      llvm::outs() << "Freeing .alloc\n";
       free(datastate.alloc);
     }
 
