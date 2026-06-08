@@ -9,6 +9,9 @@
 //! It fundamentally deviates from the general norm into high performance computing
 //! and uses file-backed pages on platforms like windows
 
+#[cfg(windows)]
+pub mod coffr;
+
 pub mod advanced;
 pub mod platform;
 pub mod relcar;

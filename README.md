@@ -13,30 +13,30 @@ We support the following executable api:
 - MemoryExecutableApi (Rust)
 
 <details>
-  <summary>OS Platform Support</summary>
+  <summary>🫕 OS Platform Support</summary>
 
-| Operating System | Arch        | Status | Notes                                                                                                      |
-| ---------------- | ----------- | ------ | ---------------------------------------------------------------------------------------------------------- |
-| Windows          | x86_64      | ✅ 🥇  |                                                                                                            |
-|                  | x86         | 🟨     | Testing infrastructure welcome                                                                             |
-|                  | arm64       | ✅(🟨) | RELCAR support good, no JITLink and minimal RTDyld                                                         |
-| Linux            | x86_64      | ✅ 🥇  |                                                                                                            |
-|                  | x86         | 🟨     | Testing infrastructure welcome                                                                             |
-|                  | arm64       | ✅     |                                                                                                            |
-|                  | armv7       | 🏗️     | Testing infrastructure welcome                                                                             |
-|                  | riscv64     | ✅     |                                                                                                            |
-|                  | riscv32     | 🏗️     | Testing infrastructure welcome                                                                             |
-|                  | loongarch64 | 🏗️     | TODO: Build LLVM loongarch64 [llvm](https://github.com/savmlang/llvm/blob/main/.github/workflows/llvm.yml) |
-|                  | powerpc64le | 🏗️     | Testing infrastructure welcome                                                                             |
-|                  | mips64el    | 🏗️     | Testing infrastructure welcome                                                                             |
-| macOS            |             |        | Gatekeeper might block JIT. Be advised                                                                     |
-|                  | x86_64      | ✅     |                                                                                                            |
-|                  | arm64       | ✅     |                                                                                                            |
-| Android          | x86_64      | ❌     | Android has unintended friction                                                                            |
-|                  | x86         | ❌     | towards memory mapped code due to                                                                          |
-|                  | armv7       | ❌     | security reasons.                                                                                          |
-|                  | arm64       | ❌     |                                                                                                            |
-| iOS              | arm64       | ❌     | Experimental, Hacky, not worth it.                                                                         |
+| Operating System | Arch        | Status  | Notes                                                                                                      |
+| ---------------- | ----------- | ------- | ---------------------------------------------------------------------------------------------------------- |
+| Windows          | x86_64      | ✅ (🥇) |                                                                                                            |
+|                  | x86         | ❌ (🟨) | Only COFFR support                                                                                         |
+|                  | arm64       | ✅ (🟨) | RELCAR support good, no JITLink and minimal RTDyld                                                         |
+| Linux            | x86_64      | ✅ (🥇) |                                                                                                            |
+|                  | x86         | 🟨      | Testing infrastructure welcome                                                                             |
+|                  | arm64       | ✅      |                                                                                                            |
+|                  | armv7       | ✅      | Testing infrastructure welcome                                                                             |
+|                  | riscv64     | ✅      |                                                                                                            |
+|                  | riscv32     | 🏗️      | Testing infrastructure welcome                                                                             |
+|                  | loongarch64 | 🏗️      | TODO: Build LLVM loongarch64 [llvm](https://github.com/savmlang/llvm/blob/main/.github/workflows/llvm.yml) |
+|                  | powerpc64le | ✅      | Testing infrastructure welcome                                                                             |
+|                  | mips64el    | 🏗️      | Testing infrastructure welcome                                                                             |
+| macOS            |             |         | Gatekeeper might block JIT. Be advised                                                                     |
+|                  | x86_64      | ✅      |                                                                                                            |
+|                  | arm64       | ✅      |                                                                                                            |
+| Android          | x86_64      | ❌      | Android has unintended friction                                                                            |
+|                  | x86         | ❌      | towards memory mapped code due to                                                                          |
+|                  | armv7       | ❌      | security reasons.                                                                                          |
+|                  | arm64       | ❌      |                                                                                                            |
+| iOS              | arm64       | ❌      | Experimental, Hacky, not worth it.                                                                         |
 
 🥇: Maintainer Environment
 ✅: Supported
@@ -49,6 +49,7 @@ We support the following executable api:
 Available relocators :
 
 - SaJIT RELCAR (Rust)
+- SaJIT COFFR (Rust)
 - LLVM JITLink (C++)
 - LLVM RuntimeDyld (C++)
 
@@ -68,6 +69,20 @@ SaJIT _RELCAR_ is an extensible relocator and the default **BasicRelocator** sho
 | RelocKind::X86CallPCRelOrPCRelProvidedRelativeBytes | x86_64                 | Directly patches treating addr as i32 | ±2GiB   |
 | RelocKind::Arm64Call                                | arm64                  | B/BL 26-bit immediate only            | ±128MiB |
 | RelocKind::Arm64CallProvidedRelativeBytes           | arm64                  | Directly patches treating addr as i24 | ±128MiB |
+
+### 🪟 SaJIT COFFR
+
+This a relocator only for parsing PE/COFF objects and is **ONLY** intended for i386 where all the LLVM Alternatives spectacularly fail.
+This is a heavily minimal COFF parser and relocator for only **i386** windows
+
+Some parts from : [coffeldr](https://github.com/joaoviictorti/coffeeldr) are explicitly tagged with their APACHE license
+
+### 📍 Implementations
+
+| Name                 | Note             | Range |
+| :------------------- | ---------------- | ----- |
+| IMAGE_REL_I386_DIR32 | 🏗️ Tests Pending | FULL  |
+| IMAGE_REL_I386_REL32 | 🏗️ Tests Pending | FULL  |
 
 ## 🔗 LLVM JITLink
 
@@ -104,4 +119,5 @@ Maintainer [@ahqsoftwares](https://github.com/ahqsoftwares) believes the followi
 Cranelift (X64, Arm64, Riscv64 ABSOLUTE) = RELCAR
 Object File (X64 ELF/MachO, Arm64 ELF/MachO) = JITLink
 Object File (X64 COFF, Arm64 COFF) = RuntimeDyld
+Object File (I386 COFF) = COFFR [🫕 THE ONLY TARGET COFFR HAS]
 ```
