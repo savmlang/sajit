@@ -12,8 +12,10 @@ We support the following executable api:
 
 - MemoryExecutableApi (Rust)
 
+<h2>🫕 OS Platform Support</h2>
+
 <details>
-  <summary>🫕 OS Platform Support</summary>
+  <summary>Click here to expand</summary>
 
 | Operating System | Arch        | Status  | Notes                                                                                                      |
 | ---------------- | ----------- | ------- | ---------------------------------------------------------------------------------------------------------- |
@@ -45,6 +47,35 @@ We support the following executable api:
 ❌: Unlikely to be supported
 
 </details>
+
+## 🔗 Linker Platform Matrix
+
+The below table should be a good heuristic about support (JITLink and RuntimeDyld may be incorrect. Consult LLVM)
+
+| Operating System | Arch        | [RELCAR \*](#-sajit-relcar) | [COFFR \*](#-sajit-coffr) | [JITLink \*](#-llvm-jitlink) | [RuntimeDyld \*](#-llvm-runtimedyld) |
+| ---------------- | ----------- | --------------------------- | ------------------------- | ---------------------------- | ------------------------------------ |
+| Windows          | x86_64      | ✅                          | ❌                        | ✅                           | ✅                                   |
+|                  | x86         | 🟨                          | ✅                        | ❌                           | 🟨                                   |
+|                  | arm64       | ✅                          | ❌                        | ❌                           | ✅                                   |
+| Linux            | x86_64      | ✅                          | ❌                        | ✅                           | ✅                                   |
+|                  | x86         | 🟨                          | ❌                        | ✅                           | ✅                                   |
+|                  | arm64       | ✅                          | ❌                        | ✅                           | ✅                                   |
+|                  | armv7       | 🟨                          | ❌                        | ✅                           | ✅                                   |
+|                  | riscv64     | ✅                          | ❌                        | ✅                           | ✅                                   |
+|                  | riscv32     | ❌                          | ❌                        | ❌                           | 🟨                                   |
+|                  | loongarch64 | ❌                          | ❌                        | ❌                           | ✅                                   |
+|                  | powerpc64le | ❌                          | ❌                        | ✅                           | ✅                                   |
+|                  | mips64el    | ❌                          | ❌                        | ❌                           | ✅                                   |
+| macOS            | x86_64      | ✅                          | ❌                        | ✅                           | ✅                                   |
+|                  | arm64       | ✅                          | ❌                        | ✅                           | ✅                                   |
+
+✅: Supported
+🟨: Limbo - prefer others
+❌: Not Supported
+
+- **RELCAR** cannot process ObjectFiles
+
+## 🚂 Relocators
 
 Available relocators :
 
