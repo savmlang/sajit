@@ -85,7 +85,13 @@ where
     let state = &mut *(state as *mut DataJITNote<T>);
 
     if let Ok(symbol) = str::from_utf8(from_raw_parts(ptr as _, size)) {
-      let text = *state.resolved.get(".text").unwrap();
+      #[cfg(not(target_os = "macos"))]
+      let textregion = ".text";
+
+      #[cfg(target_os = "macos")]
+      let textregion = "__text";
+
+      let text = *state.resolved.get(textregion).unwrap();
 
       state
         .resolved
