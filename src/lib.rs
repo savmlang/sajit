@@ -35,4 +35,5 @@ pub use advanced::*;
 /// is guaranteed undefined behaviour that no CPU would like
 /// and would result in memory access violation, or even worse,
 /// crash with the OS.
+#[repr(C)]
 pub struct Executable;
