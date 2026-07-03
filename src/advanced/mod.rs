@@ -69,6 +69,11 @@ pub trait MemoryExecutableApi: Sized {
   /// This is safe because it checks if the `HashSet` is empty of not
   fn free(self) -> Result<(), Self>;
 
+  /// Deallocates the memory, file and all of the code stored
+  ///
+  /// This is unsafe because you must `forget()` it after success
+  unsafe fn try_free(&mut self) -> Result<(), ()>;
+
   /// Leak the data and forget HANDLES
   ///
   /// This is quite useful as it removes all the bookkeeping for Executable Code that

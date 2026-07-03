@@ -133,7 +133,16 @@ impl MemoryExecutableApi for MemoryExecutable {
     debug_assert!(_old != 0);
   }
 
-  fn free(self) -> Result<(), Self> {
+  fn free(mut self) -> Result<(), Self> {
+    if let Ok(()) = unsafe { self.try_free() } {
+      forget(self);
+      return Ok(());
+    }
+
+    Err(self)
+  }
+
+  unsafe fn try_free(&mut self) -> Result<(), ()> {
     if self.stored.load(Ordering::Acquire) == 0 {
       unsafe {
         let output = [
@@ -149,12 +158,10 @@ impl MemoryExecutableApi for MemoryExecutable {
         }
       }
 
-      forget(self);
-
       return Ok(());
     }
 
-    Err(self)
+    Err(())
   }
 
   fn leak(self) -> () {
