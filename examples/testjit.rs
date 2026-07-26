@@ -64,7 +64,7 @@ fn main() {
 
     builder.ins().return_(&[arg1]);
     builder.seal_all_blocks();
-    builder.finalize();
+    builder.finalize(isa.frontend_config());
   }
 
   println!("{func:?}");
