@@ -73,6 +73,7 @@ fn jitlink_llvm() {
   use std::{env, path::PathBuf};
 
   println!("cargo::rerun-if-changed=jitlinkc++");
+  println!("cargo::rerun-if-env-changed=SAJIT_SYSROOT");
 
   let bindings = bindgen::Builder::default()
     .header("jitlinkc++/jitlinkc++.h")
