@@ -40,8 +40,8 @@ fn llvm_config(args: &[&str]) -> String {
         "/proc",
         "--dev",
         "/dev",
+        "/usr/bin/llvm-config",
       ])
-      .arg(&program)
       .args(args)
       .output()
       .expect("llvm-config not found in PATH")
