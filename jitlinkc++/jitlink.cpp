@@ -115,6 +115,7 @@ public:
         memset(dest, 0, block->getSize());
       }
 
+      llvm::outs() << "Idx: " << idx << "Align :" << align << "\n";
       assert(allocsSpan[idx].rwview % align == 0);
       assert(allocsSpan[idx].rxview % align == 0);
 
