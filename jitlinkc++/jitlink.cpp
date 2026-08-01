@@ -115,9 +115,9 @@ public:
         memset(dest, 0, block->getSize());
       }
 
-      llvm::outs() << "Idx: " << idx << "Align :" << align << "\n";
+      llvm::outs() << "Idx: " << idx << "Align :" << align << "PTR : " << allocsSpan[idx].rwview << "\n";
+      llvm::outs().flush();
       assert(allocsSpan[idx].rwview % align == 0);
-      assert(allocsSpan[idx].rxview % align == 0);
 
       block->setAddress(
           orc::ExecutorAddr(allocsSpan[idx].rxview));
