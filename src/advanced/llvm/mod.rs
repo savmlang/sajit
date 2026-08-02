@@ -204,27 +204,31 @@ where
     let allocobj = allocation
       .into_iter()
       .map(|allocation| {
-        let align = rw_dst.align_offset(allocation.alignment as usize);
+        let align = (rw_dst as *mut u8).align_offset(allocation.alignment as usize);
 
         if align == usize::MAX {
           return None;
         }
 
-        size_added = (size_added as usize).checked_add(align.checked_add(allocation.size)?)?;
+        let added = align.checked_add(allocation.size)?;
 
-        let addend = align.checked_add(allocation.size)?;
+        size_added = (size_added as usize).checked_add(added)?;
+
+        // Assert checks for alignment
+        println!("Got Alignment : {}", allocation.alignment as usize);
+        println!("{} % {}", rw_dst.byte_add(align).addr(), allocation.alignment as usize);
 
         // Ensure that it doesn't overflow to hell
-        rw_dst.addr().checked_add(addend)?;
-        rx_dst.addr().checked_add(addend)?;
+        rw_dst.addr().checked_add(added)?;
+        rx_dst.addr().checked_add(added)?;
 
         let out = AllocBlockSliceJL {
           rwview: rw_dst.byte_add(align).addr(),
           rxview: rx_dst.byte_add(align).addr(),
         };
 
-        rw_dst = rw_dst.byte_add(addend);
-        rx_dst = rx_dst.byte_add(addend);
+        rw_dst = rw_dst.byte_add(added);
+        rx_dst = rx_dst.byte_add(added);
 
         Some(out)
       })
