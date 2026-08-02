@@ -115,8 +115,6 @@ public:
         memset(dest, 0, block->getSize());
       }
 
-      llvm::outs() << "Idx: " << idx << "Align :" << align << "PTR : " << allocsSpan[idx].rwview << "\n";
-      llvm::outs().flush();
       assert(allocsSpan[idx].rwview % align == 0);
 
       block->setAddress(

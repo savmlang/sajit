@@ -46,10 +46,16 @@ extern "C"
 
     std::span<AllocRequestJL> spanned(req, len);
 
+    uint64_t maxalign = 0;
+    for (auto req : spanned)
+    {
+      maxalign = std::max((uint64_t)maxalign, (uint64_t)req.alignment);
+    }
+
     auto totalsize = 64;
     for (auto req : spanned)
     {
-      totalsize += alignTo(req.size, std::max(req.alignment, (uint64_t)16));
+      totalsize += alignTo(req.size, maxalign);
     }
 
     auto alloc = malloc(totalsize);
@@ -70,7 +76,7 @@ extern "C"
 
       vect[i] = slice;
 
-      auto toAdd = alignTo(req.size, std::max(req.alignment, (uint64_t)16));
+      auto toAdd = alignTo(req.size, maxalign);
       view += toAdd;
       alignedalloc += toAdd;
 
