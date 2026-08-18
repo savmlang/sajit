@@ -22,14 +22,4 @@ impl LLVMDryRun for MemoryExecutable {
     };
     NonZeroU64::new(len)
   }
-
-  fn under_size(&self, size: usize) -> Option<bool> {
-    Some(
-      self
-        .cursor
-        // Since we've calculated size from 1B alignment perspective, we can directly add it
-        .checked_add(size)?
-        <= self.size,
-    )
-  }
 }

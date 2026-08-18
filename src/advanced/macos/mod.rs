@@ -72,17 +72,21 @@ impl MemoryExecutableApi for MemoryExecutable {
     }
   }
 
-  fn write_fn(
+  unsafe fn write_fn_iterated<'a, T, E, R>(
     &mut self,
-    data: &[u8],
-    relocs: &[crate::relocations::Relocation],
+    capped_size: usize,
+    data: T,
+    relocs: E,
     relcar: &Relcar,
-  ) -> super::WriteFnResult {
-    let len = data.len();
-
+  ) -> WriteFnResult
+  where
+    T: Iterator<Item = &'a [u8]>,
+    E: Iterator<Item = R>,
+    R: std::borrow::Borrow<crate::relocations::Relocation>,
+  {
     let start_offset = self.cursor.next_multiple_of(16);
 
-    if start_offset + len > self.size {
+    if start_offset + capped_size > self.size {
       return WriteFnResult::OutOfSlab;
     }
 
@@ -91,11 +95,16 @@ impl MemoryExecutableApi for MemoryExecutable {
 
       pthread_jit_write_protect_np(0);
       // Copy all the bytes
-      copy_nonoverlapping(data.as_ptr(), dst_rwx, len);
+      let mut len = 0;
+      for data in data {
+        debug_assert!(len + data.len() <= capped_size);
+        copy_nonoverlapping(data.as_ptr(), dst_rwx.add(len), data.len());
+        len += data.len();
+      }
 
       // Relocate
       for relocation in relocs {
-        relcar.relocate(dst_rwx, len, relocation);
+        relcar.relocate(dst_rwx, len, relocation.borrow());
       }
       pthread_jit_write_protect_np(1);
 

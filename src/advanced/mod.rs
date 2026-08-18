@@ -1,9 +1,9 @@
 #[cfg(windows)]
 mod windows;
 
+use std::{borrow::Borrow, iter::once, num::NonZeroU8, sync::atomic::AtomicUsize};
 #[cfg(feature = "llvm")]
 use std::{borrow::Cow, collections::HashMap, num::NonZeroU64};
-use std::{num::NonZeroU8, sync::atomic::AtomicUsize};
 
 #[cfg(feature = "llvm")]
 pub mod llvm;
@@ -50,10 +50,33 @@ pub trait MemoryExecutableApi: Sized {
   /// We use a single view with macOS pthread_jit
   fn new_slab(multiple: Option<NonZeroU8>) -> Self;
 
-  /// Writes a function into the data stream, returns `None` if the 4KB region is filled
+  /// Writes a function into the data stream, returns `None` if the region is filled
   ///
   /// If the region is indeed filled, you're required create a new region, and seal the old region
-  fn write_fn(&mut self, data: &[u8], relocs: &[Relocation], relcar: &Relcar) -> WriteFnResult;
+  ///
+  /// ## Safety
+  /// This function relies on the accuracy of the [`capped_size`] field provided AND the accuracy
+  /// of the total size with the final size [`capped_size`] field would provide.
+  ///
+  /// It is ONLY safe if [`capped_size`] <= size([`data`])
+  unsafe fn write_fn_iterated<'a, T, E, R>(
+    &mut self,
+    capped_size: usize,
+    data: T,
+    relocs: E,
+    relcar: &Relcar,
+  ) -> WriteFnResult
+  where
+    T: Iterator<Item = &'a [u8]>,
+    E: Iterator<Item = R>,
+    R: Borrow<Relocation>;
+
+  /// Writes a function into the data stream, returns `None` if the region is filled
+  ///
+  /// If the region is indeed filled, you're required create a new region, and seal the old region
+  fn write_fn(&mut self, data: &[u8], relocs: &[Relocation], relcar: &Relcar) -> WriteFnResult {
+    unsafe { self.write_fn_iterated(data.len(), once(data), relocs.iter(), relcar) }
+  }
 
   /// Makes that the FID can now be safely freed!
   /// We internally have a HashSet of the data and if all of them
@@ -81,6 +104,30 @@ pub trait MemoryExecutableApi: Sized {
   fn leak(self) -> ();
 }
 
+pub trait SizeCheck: MemoryExecutableApi {
+  /// Does the MemoryExecutable have enough size
+  fn under_size(&self, size: usize) -> Option<bool>;
+
+  /// Gets the base RX address
+  fn base_address(&self) -> usize;
+}
+
+impl SizeCheck for MemoryExecutable {
+  fn under_size(&self, size: usize) -> Option<bool> {
+    Some(
+      self
+        .cursor
+        // Since we've calculated size from 1B alignment perspective, we can directly add it
+        .checked_add(size)?
+        <= self.size,
+    )
+  }
+
+  fn base_address(&self) -> usize {
+    self.rxview.addr()
+  }
+}
+
 pub trait MemorySizeInfo {
   fn size(&self) -> usize;
   fn cursor(&self) -> usize;
@@ -105,9 +152,6 @@ pub trait LLVMDryRun: MemoryExecutableApi {
   /// Returns an much more accurate best-effort size (atmost size)
   /// by parsing the objectfile
   fn sizecalc_jitlink(symbolpool: &symbpool::LLVMSymbolPool, object: &[u8]) -> Option<NonZeroU64>;
-
-  /// Does the MemoryExecutable have enough size
-  fn under_size(&self, size: usize) -> Option<bool>;
 }
 
 #[cfg(feature = "llvm")]

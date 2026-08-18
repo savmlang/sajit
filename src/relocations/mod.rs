@@ -4,7 +4,7 @@
 pub(crate) mod llvmreloc;
 
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Relocation {
   pub addend: i64,
   /// The address to the symbol
@@ -14,7 +14,7 @@ pub struct Relocation {
 }
 
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum RelocKind {
   // X86-64
   /// This describes an absolute 64-bit call
