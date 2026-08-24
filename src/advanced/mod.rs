@@ -26,7 +26,11 @@ mod macos;
 #[cfg(target_os = "macos")]
 pub use macos::*;
 
-use crate::{Executable, relcar::Relcar, relocations::Relocation};
+use crate::{
+  Executable,
+  relcar::{Relcar, Relocator},
+  relocations::Relocation,
+};
 
 pub enum WriteFnResult {
   /// We have ran out of slab to allocate this
@@ -59,22 +63,28 @@ pub trait MemoryExecutableApi: Sized {
   /// of the total size with the final size [`capped_size`] field would provide.
   ///
   /// It is ONLY safe if [`capped_size`] <= size([`data`])
-  unsafe fn write_fn_iterated<'a, T, E, R>(
+  unsafe fn write_fn_iterated<'a, T, E, R, B>(
     &mut self,
     capped_size: usize,
     data: T,
     relocs: E,
-    relcar: &Relcar,
+    relcar: &Relcar<B>,
   ) -> WriteFnResult
   where
     T: Iterator<Item = &'a [u8]>,
     E: Iterator<Item = R>,
-    R: Borrow<Relocation>;
+    R: Borrow<Relocation>,
+    B: Relocator;
 
   /// Writes a function into the data stream, returns `None` if the region is filled
   ///
   /// If the region is indeed filled, you're required create a new region, and seal the old region
-  fn write_fn(&mut self, data: &[u8], relocs: &[Relocation], relcar: &Relcar) -> WriteFnResult {
+  fn write_fn<B: Relocator>(
+    &mut self,
+    data: &[u8],
+    relocs: &[Relocation],
+    relcar: &Relcar<B>,
+  ) -> WriteFnResult {
     unsafe { self.write_fn_iterated(data.len(), once(data), relocs.iter(), relcar) }
   }
 

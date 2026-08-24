@@ -17,9 +17,7 @@ pub struct Relcar<B: Relocator = BasicRelocator> {
 
 impl<B: Relocator> Default for Relcar<B> {
   fn default() -> Self {
-    Self {
-      relcar_relocator: PhantomData,
-    }
+    Self::new()
   }
 }
 
@@ -35,9 +33,11 @@ pub struct RelocInfo<'a> {
 }
 
 impl<B: Relocator> Relcar<B> {
-  /// Alias to [`Self::default`]
-  pub fn new() -> Self {
-    Self::default()
+  /// Like [`Self::default`], but const fn
+  pub const fn new() -> Self {
+    Self {
+      relcar_relocator: PhantomData,
+    }
   }
 
   #[inline(always)]

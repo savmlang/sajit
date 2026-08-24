@@ -80,17 +80,18 @@ impl MemoryExecutableApi for MemoryExecutable {
     }
   }
 
-  unsafe fn write_fn_iterated<'a, T, E, R>(
+  unsafe fn write_fn_iterated<'a, T, E, R, B>(
     &mut self,
     capped_size: usize,
     data: T,
     relocs: E,
-    relcar: &Relcar,
+    relcar: &Relcar<B>,
   ) -> WriteFnResult
   where
     T: Iterator<Item = &'a [u8]>,
     E: Iterator<Item = R>,
     R: std::borrow::Borrow<crate::relocations::Relocation>,
+    B: crate::relcar::Relocator,
   {
     let start_offset = self.cursor.next_multiple_of(16);
 
