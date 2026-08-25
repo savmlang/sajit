@@ -8,7 +8,6 @@ use std::{
 
 use libc::{MAP_ANON, MAP_JIT, MAP_PRIVATE, PROT_EXEC, PROT_READ, PROT_WRITE, mmap, munmap};
 
-#[cfg(feature = "llvm")]
 use crate::Executable;
 
 use crate::{
@@ -35,7 +34,6 @@ pub struct MemoryExecutable {
   rview: *mut u8,
   #[cfg(feature = "llvm")]
   pub(crate) rwview: *mut u8,
-  #[cfg(feature = "llvm")]
   pub(crate) rxview: *const Executable,
 
   // Metadata
@@ -63,7 +61,6 @@ impl MemoryExecutableApi for MemoryExecutable {
         rview,
         #[cfg(feature = "llvm")]
         rwview: rview,
-        #[cfg(feature = "llvm")]
         rxview: rview as _,
         size,
         cursor: 0,
