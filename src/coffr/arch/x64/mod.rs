@@ -7,7 +7,7 @@ use object::pe::{
   IMAGE_REL_AMD64_SECREL, IMAGE_REL_AMD64_SECTION,
 };
 
-use crate::coffr_next::{
+use crate::coffr::{
   CoFFRError,
   arch::{LinkSection, ResolvedRelocation},
 };
