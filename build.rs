@@ -12,6 +12,7 @@ fn llvm_config(args: &[&str]) -> String {
 
   let vars = [
     var("SAJIT_LLVM_PATH"),
+    var("LLVM_SYS_231_PREFIX"),
     var("LLVM_SYS_221_PREFIX"),
     var("LLVM_SYS_211_PREFIX"),
   ];

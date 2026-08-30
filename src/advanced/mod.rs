@@ -65,6 +65,7 @@ pub trait MemoryExecutableApi: Sized {
   /// It is ONLY safe if [`capped_size`] <= size([`data`])
   unsafe fn write_fn_iterated<'a, T, E, R, B>(
     &mut self,
+    alignment: usize,
     capped_size: usize,
     data: T,
     relocs: E,
@@ -79,13 +80,15 @@ pub trait MemoryExecutableApi: Sized {
   /// Writes a function into the data stream, returns `None` if the region is filled
   ///
   /// If the region is indeed filled, you're required create a new region, and seal the old region
+  ///
+  /// This uses standard 16B alignment
   fn write_fn<B: Relocator>(
     &mut self,
     data: &[u8],
     relocs: &[Relocation],
     relcar: &Relcar<B>,
   ) -> WriteFnResult {
-    unsafe { self.write_fn_iterated(data.len(), once(data), relocs.iter(), relcar) }
+    unsafe { self.write_fn_iterated(16, data.len(), once(data), relocs.iter(), relcar) }
   }
 
   /// Makes that the FID can now be safely freed!
@@ -116,21 +119,50 @@ pub trait MemoryExecutableApi: Sized {
 
 pub trait SizeCheck: MemoryExecutableApi {
   /// Does the MemoryExecutable have enough size
-  fn under_size(&self, size: usize) -> Option<bool>;
+  fn under_size(&self, size: usize) -> Option<bool> {
+    self.under_size_adv([SizeAlign { align: 16, size }].into_iter())
+  }
+
+  /// Does the MemoryExecutable have enough size
+  fn under_size_adv<T>(&self, size_align: T) -> Option<bool>
+  where
+    T: Iterator<Item = SizeAlign>;
 
   /// Gets the base RX address
   fn base_address(&self) -> usize;
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct SizeAlign {
+  pub size: usize,
+  pub align: usize,
+}
+
 impl SizeCheck for MemoryExecutable {
-  fn under_size(&self, size: usize) -> Option<bool> {
-    Some(
-      self
-        .cursor
-        // Since we've calculated size from 1B alignment perspective, we can directly add it
-        .checked_add(size)?
-        <= self.size,
-    )
+  fn under_size_adv<T>(&self, size_align: T) -> Option<bool>
+  where
+    T: Iterator<Item = SizeAlign>,
+  {
+    let base = (self.rxview as *const u8).addr().checked_add(self.cursor)?;
+
+    let mut curr = base;
+    let available = self.size.checked_sub(self.cursor)?;
+
+    // Iterate & Check Overflow
+    for item in size_align {
+      let SizeAlign { size, align } = item;
+
+      // Ensure alignment is a non-zero power of two if required by your layout
+      if !align.is_power_of_two() {
+        return None;
+      }
+
+      curr = curr.checked_next_multiple_of(align)?;
+      curr = curr.checked_add(size)?;
+    }
+
+    let elasped = curr.checked_sub(base)?;
+    Some(elasped <= available)
   }
 
   fn base_address(&self) -> usize {
@@ -141,6 +173,8 @@ impl SizeCheck for MemoryExecutable {
 pub trait MemorySizeInfo {
   fn size(&self) -> usize;
   fn cursor(&self) -> usize;
+
+  fn next_cursor(&self, align: usize) -> Option<usize>;
 }
 
 impl MemorySizeInfo for MemoryExecutable {
@@ -150,6 +184,16 @@ impl MemorySizeInfo for MemoryExecutable {
 
   fn size(&self) -> usize {
     self.size
+  }
+
+  fn next_cursor(&self, alignment: usize) -> Option<usize> {
+    let rx_base = (self.rxview as *const u8).addr();
+    let base_addr = rx_base.checked_add(self.cursor)?;
+    let cursor = base_addr
+      .checked_next_multiple_of(alignment)?
+      .checked_sub(rx_base)?;
+
+    (cursor < self.size).then_some(cursor)
   }
 }
 

@@ -86,6 +86,10 @@ impl MemoryExecutableApi for MemoryExecutable {
       )
       .Value;
 
+      const KB_64: usize = 64 * 1024;
+      assert!(rw_ptr.addr() % KB_64 == 0, "RW_PTR is not 64KB aligned");
+      assert!(rx_ptr.addr() % KB_64 == 0, "RX_PTR is not 64KB aligned");
+
       Self {
         cursor: 0,
         stored: AtomicUsize::new(0),
@@ -99,6 +103,7 @@ impl MemoryExecutableApi for MemoryExecutable {
 
   unsafe fn write_fn_iterated<'a, T, E, R, B>(
     &mut self,
+    alignment: usize,
     capped_size: usize,
     data: T,
     relocs: E,
@@ -110,7 +115,11 @@ impl MemoryExecutableApi for MemoryExecutable {
     R: std::borrow::Borrow<crate::relocations::Relocation>,
     B: crate::relcar::Relocator,
   {
-    let start_offset = self.cursor.next_multiple_of(16);
+    let start_offset = {
+      let rx_base = (self.rxview as *const u8).addr();
+      let base_addr = rx_base + self.cursor;
+      base_addr.next_multiple_of(alignment) - rx_base
+    };
 
     if start_offset + capped_size > self.size {
       return WriteFnResult::OutOfSlab;
@@ -124,7 +133,7 @@ impl MemoryExecutableApi for MemoryExecutable {
       let mut len = 0;
       for data in data {
         debug_assert!(len + data.len() <= capped_size);
-        copy_nonoverlapping(data.as_ptr(), dst_rw.add(len), data.len());
+        copy_nonoverlapping(data.as_ptr(), dst_rw.byte_add(len), data.len());
         len += data.len();
       }
 

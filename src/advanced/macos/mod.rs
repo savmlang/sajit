@@ -71,6 +71,7 @@ impl MemoryExecutableApi for MemoryExecutable {
 
   unsafe fn write_fn_iterated<'a, T, E, R, B>(
     &mut self,
+    alignment: usize,
     capped_size: usize,
     data: T,
     relocs: E,
@@ -82,7 +83,11 @@ impl MemoryExecutableApi for MemoryExecutable {
     R: std::borrow::Borrow<crate::relocations::Relocation>,
     B: crate::relcar::Relocator,
   {
-    let start_offset = self.cursor.next_multiple_of(16);
+    let start_offset = {
+      let rx_base = (self.rxview as *const u8).addr();
+      let base_addr = rx_base + self.cursor;
+      base_addr.next_multiple_of(alignment) - rx_base
+    };
 
     if start_offset + capped_size > self.size {
       return WriteFnResult::OutOfSlab;
