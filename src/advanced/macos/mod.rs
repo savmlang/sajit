@@ -32,7 +32,6 @@ unsafe extern "C" {
 pub struct MemoryExecutable {
   // View
   rview: *mut u8,
-  #[cfg(feature = "llvm")]
   pub(crate) rwview: *mut u8,
   pub(crate) rxview: *const Executable,
 
@@ -59,7 +58,6 @@ impl MemoryExecutableApi for MemoryExecutable {
 
       Self {
         rview,
-        #[cfg(feature = "llvm")]
         rwview: rview,
         rxview: rview as _,
         size,
