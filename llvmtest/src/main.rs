@@ -28,7 +28,7 @@ fn main() {
   let o = exec.cursor();
   let est = MemoryExecutable::sizecalc_jitlink(&symbpool, &object);
   let hmap = exec
-    .write_jitlink(&symbpool, &object, |loc| {
+    .write_jitlink(1, &symbpool, &object, |loc| {
       unsafe {
         println!("{}", &(*loc));
       }
