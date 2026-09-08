@@ -101,7 +101,7 @@ impl MemoryExecutableApi for MemoryExecutable {
     }
   }
 
-  unsafe fn write_fn_iterated<'a, T, E, R, B>(
+  unsafe fn write_fn_iterated<'a, const INC: bool, const WRITE: bool, T, E, R, B>(
     &mut self,
     alignment: usize,
     capped_size: usize,
@@ -131,20 +131,24 @@ impl MemoryExecutableApi for MemoryExecutable {
 
       // Copy all the bytes
       let mut len = 0;
-      for data in data {
-        debug_assert!(len + data.len() <= capped_size);
-        copy_nonoverlapping(data.as_ptr(), dst_rw.byte_add(len), data.len());
-        len += data.len();
-      }
+      if WRITE {
+        for data in data {
+          debug_assert!(len + data.len() <= capped_size);
+          copy_nonoverlapping(data.as_ptr(), dst_rw.byte_add(len), data.len());
+          len += data.len();
+        }
 
-      // Relocate
-      for relocation in relocs {
-        relcar.relocate(dst_rw, len, relocation.borrow());
-      }
+        // Relocate
+        for relocation in relocs {
+          relcar.relocate(dst_rw, len, relocation.borrow());
+        }
 
-      // Non X64 : Flush ICache
-      // on X64 = NOOP
-      crate::platform::flush_icache(dst_rx as _, len);
+        // Non X64 : Flush ICache
+        // on X64 = NOOP
+        crate::platform::flush_icache(dst_rx as _, len);
+      } else {
+        len = capped_size;
+      }
 
       compiler_fence(Ordering::Release);
 
@@ -154,7 +158,9 @@ impl MemoryExecutableApi for MemoryExecutable {
       // Let the other section decide alignment
       self.cursor = next_raw;
 
-      self.stored.fetch_add(1, Ordering::Relaxed);
+      if INC {
+        self.stored.fetch_add(1, Ordering::Relaxed);
+      }
 
       WriteFnResult::Executable(dst_rx)
     }
@@ -165,7 +171,12 @@ impl MemoryExecutableApi for MemoryExecutable {
   }
 
   unsafe fn release_ptr(stored: &AtomicUsize) {
-    let _out = stored.fetch_sub(1, Ordering::Release);
+    #[cfg(debug_assertions)]
+    let order = Ordering::AcqRel;
+    #[cfg(not(debug_assertions))]
+    let order = Ordering::Release;
+
+    let _out = stored.fetch_sub(1, order);
     debug_assert!(_out != 0);
   }
 

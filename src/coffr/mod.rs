@@ -3,16 +3,22 @@ use std::borrow::Cow;
 use object::{
   Architecture, File, Object, ObjectSection, ObjectSymbol, RelocationFlags, RelocationTarget,
   SymbolIndex, SymbolSection,
-  coff::{CoffHeader, CoffRelocationIterator, CoffSection},
+  coff::{CoffHeader, CoffRelocationIterator},
   pe::{AnonObjectHeaderBigobj, ImageFileHeader, RelocationType},
   read::coff::CoffFile,
 };
 
-use crate::{MemoryExecutable, coffr::arch::link_binary};
+use crate::{
+  Executable, WriteFnResult,
+  coffr::{arch::link_binary, cache::LinkerTransaction},
+  transaction::MemoryTransaction,
+};
 
 pub mod arch;
+pub mod cache;
+pub mod gp;
 
-pub struct CoFFR<'a, T: CoffHeader> {
+pub struct CoFFR<'a, T: CoffHeader + ?Sized> {
   pub file: CoffFile<'a, &'a [u8], T>,
 }
 
@@ -60,7 +66,8 @@ impl<'a, T: CoffHeader> CoFFR<'a, T> {
   pub fn link<'memory, 'output, 'data, R>(
     &'data self,
     resolve: &'output R,
-    memory: &'memory mut MemoryExecutable,
+    memory: MemoryTransaction<'memory>,
+    vect: LinkerTransaction<'output>,
   ) -> Result<impl Iterator<Item = Result<(Name<'data>, u64), CoFFRError>> + 'output, CoFFRError>
   where
     // 'output describes the life of output stream
@@ -70,40 +77,13 @@ impl<'a, T: CoffHeader> CoFFR<'a, T> {
     // For output, 'data must outlive 'output
     // 'memory ONLY needs to be valid until this function invocation
     'data: 'output,
-    R: Fn(Name) -> u64,
+    R: Fn(Name<'data>) -> u64 + 'output,
   {
-    // Map the two sections
-    let mut text = None;
-    let mut rdata = None;
-
+    // Validate .bss, .data
     for section in self.file.sections() {
       let name = section.name()?;
 
-      fn fndata<'a, R, H: CoffHeader>(
-        file: &'a CoffFile<'a, &'a [u8], H>,
-        section: CoffSection<'a, 'a, &'a [u8], H>,
-        resolve: &'a R,
-      ) -> Result<Section<'a, impl Iterator<Item = Result<Relocation, CoFFRError>> + 'a>, CoFFRError>
-      where
-        R: Fn(Name<'a>) -> u64,
-      {
-        let data = section.uncompressed_data()?;
-
-        let relocations = relocparser(&file, section.relocations(), resolve);
-        Ok::<_, CoFFRError>(Section {
-          data,
-          align: section.align(),
-          relocations,
-        })
-      }
-
       match name {
-        ".text" => {
-          text = Some(fndata(&self.file, section, resolve)?);
-        }
-        ".rdata" => {
-          rdata = Some(fndata(&self.file, section, resolve)?);
-        }
         ".bss" | ".data" => {
           assert!(
             section.compressed_data()?.uncompressed_size == 0,
@@ -114,11 +94,6 @@ impl<'a, T: CoffHeader> CoFFR<'a, T> {
       }
     }
 
-    let Some(text) = text else {
-      assert!(false, ".text shouldn't be absent");
-      unreachable!();
-    };
-
     let arch = match self.file.architecture() {
       Architecture::Aarch64 => Arch::Arm64,
       Architecture::X86_64 => Arch::X64,
@@ -128,13 +103,14 @@ impl<'a, T: CoffHeader> CoFFR<'a, T> {
 
     link_binary(
       memory,
-      text,
-      rdata,
+      &self.file,
       arch,
       self
         .file
         .symbols()
         .map(|x| resolve_symbol(&self.file, x.index(), resolve)),
+      vect,
+      resolve,
     )
   }
 }
@@ -161,7 +137,7 @@ where
       let idx = match name_bytes {
         b".text" => SectionIdx::Text(id.0),
         b".rdata" => SectionIdx::RData(id.0),
-        _ => return Err(CoFFRError::RelocsOutsideTextData),
+        _ => return Err(CoFFRError::SymbolOutsideTextData),
       };
       Ok(Resolved::Section {
         idx,
@@ -178,11 +154,16 @@ where
   })
 }
 
-fn relocparser<'a, T: 'a + CoffHeader, R: Fn(Name<'a>) -> u64>(
-  file: &'a CoffFile<'a, &'a [u8], T>,
-  relocation: CoffRelocationIterator<'a, 'a, &'a [u8], T>,
-  resolve: &'a R,
-) -> impl Iterator<Item = Result<Relocation, CoFFRError>> + 'a {
+fn relocparser<
+  'output,
+  'data: 'output,
+  T: 'output + CoffHeader,
+  R: Fn(Name<'data>) -> u64 + 'output,
+>(
+  file: &'data CoffFile<'data, &'data [u8], T>,
+  relocation: CoffRelocationIterator<'data, 'data, &'data [u8], T>,
+  resolve: &'output R,
+) -> impl Iterator<Item = Result<Relocation, CoFFRError>> + 'output {
   relocation.map(|(offset, reloc)| {
     let symbol = match reloc.target() {
       RelocationTarget::Absolute => ABS_RESOLVED,
@@ -216,6 +197,9 @@ fn relocparser<'a, T: 'a + CoffHeader, R: Fn(Name<'a>) -> u64>(
 
 #[derive(Debug)]
 pub enum CoFFRError {
+  ConvertU32Err,
+  OptionNull,
+  SymbolOutsideTextData,
   RelocsOutsideTextData,
   InvalidObject,
   UnderSized,
@@ -295,4 +279,34 @@ pub struct Relocation {
   // S
   pub symbol: Resolved,
   // A <-- To fetch later
+}
+
+pub(crate) trait Resultify {
+  type T;
+  type E;
+  fn resultify(self) -> Result<Self::T, Self::E>;
+}
+
+impl Resultify for WriteFnResult {
+  type E = CoFFRError;
+  type T = *const Executable;
+
+  fn resultify(self) -> Result<Self::T, Self::E> {
+    match self {
+      Self::Executable(x) => Ok(x),
+      Self::OutOfSlab => Err(CoFFRError::UnderSized),
+    }
+  }
+}
+
+impl<T> Resultify for Option<T> {
+  type E = CoFFRError;
+  type T = T;
+
+  fn resultify(self) -> Result<Self::T, Self::E> {
+    match self {
+      Some(x) => Ok(x),
+      _ => Err(CoFFRError::OptionNull),
+    }
+  }
 }

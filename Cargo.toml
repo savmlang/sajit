@@ -7,9 +7,9 @@ rust-version = "1.95"
 
 [dependencies]
 libc = "^0.2"
+object = "^0.40"
 
 [target.'cfg(windows)'.dependencies]
-object = "^0.40"
 windows = { version = "^0.62", features = [
   "Win32_Security",
   "Win32_System_Memory",

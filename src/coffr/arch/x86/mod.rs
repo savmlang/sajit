@@ -8,33 +8,29 @@ use object::pe::{
 
 use crate::coffr::{
   CoFFRError,
-  arch::{LinkSection, ResolvedRelocation},
+  arch::{COFFRRelocator, CheckLinkSection, LinkSection},
 };
 
-pub fn relocate<A, B>(
-  imagebase: u64,
-  text: LinkSection<A>,
-  rdata: Option<LinkSection<B>>,
-) -> Result<(), CoFFRError>
-where
-  A: Iterator<Item = Result<ResolvedRelocation, CoFFRError>>,
-  B: Iterator<Item = Result<ResolvedRelocation, CoFFRError>>,
-{
-  unsafe {
-    link(imagebase, text)?;
+pub(crate) struct X86Relocator;
 
-    if let Some(rdata) = rdata {
-      link(imagebase, rdata)?;
+impl COFFRRelocator for X86Relocator {
+  fn relocate(&self, imagebase: u64, section: LinkSection) -> Result<(), CoFFRError> {
+    unsafe {
+      link(imagebase, section)?;
+
+      Ok(())
     }
+  }
 
-    Ok(())
+  unsafe fn count_trampolines(
+    &self,
+    _section: CheckLinkSection,
+  ) -> Result<(u32, &'static [u8]), CoFFRError> {
+    Ok((0, &[]))
   }
 }
 
-unsafe fn link<A>(base: u64, section: LinkSection<A>) -> Result<(), CoFFRError>
-where
-  A: Iterator<Item = Result<ResolvedRelocation, CoFFRError>>,
-{
+unsafe fn link(base: u64, section: LinkSection) -> Result<(), CoFFRError> {
   let view = section.view;
 
   let b = base as i64;
@@ -44,9 +40,9 @@ where
     let sect_start = relocation.sectionstart as i64;
     let s_idx = relocation.sectidx;
     let s = relocation.symbol as i64;
-    let p = view.rx_ptr.addr() as i64 + relocation.position_offset as i64;
+    let p = view.data.rx.addr() as i64 + relocation.position_offset as i64;
 
-    let p_rw = unsafe { view.rw_ptr.add(relocation.position_offset as _) };
+    let p_rw = unsafe { view.data.rw.add(relocation.position_offset as _) };
 
     unsafe {
       match relocation.typ {

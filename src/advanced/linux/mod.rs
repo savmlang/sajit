@@ -80,7 +80,7 @@ impl MemoryExecutableApi for MemoryExecutable {
     }
   }
 
-  unsafe fn write_fn_iterated<'a, T, E, R, B>(
+  unsafe fn write_fn_iterated<'a, const INC: bool, const WRITE: bool, T, E, R, B>(
     &mut self,
     alignment: usize,
     capped_size: usize,
@@ -110,10 +110,14 @@ impl MemoryExecutableApi for MemoryExecutable {
 
       // Copy all the bytes
       let mut len = 0;
-      for data in data {
-        debug_assert!(len + data.len() <= capped_size);
-        copy_nonoverlapping(data.as_ptr(), dst_rw.add(len), data.len());
-        len += data.len();
+      if WRITE {
+        for data in data {
+          debug_assert!(len + data.len() <= capped_size);
+          copy_nonoverlapping(data.as_ptr(), dst_rw.add(len), data.len());
+          len += data.len();
+        }
+      } else {
+        len = capped_size;
       }
 
       // Relocate
@@ -133,7 +137,9 @@ impl MemoryExecutableApi for MemoryExecutable {
       // Let the other section decide alignment
       self.cursor = next_raw;
 
-      self.stored.fetch_add(1, Ordering::Relaxed);
+      if INC {
+        self.stored.fetch_add(1, Ordering::Relaxed);
+      }
 
       WriteFnResult::Executable(dst_rx)
     }

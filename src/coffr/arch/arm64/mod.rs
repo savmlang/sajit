@@ -9,34 +9,74 @@ use object::pe::{
 };
 
 use crate::coffr::{
-  CoFFRError,
-  arch::{LinkSection, ResolvedRelocation},
+  CoFFRError, Resolved,
+  arch::{COFFRRelocator, CheckLinkSection, LinkSection},
 };
 
-pub fn relocate<A, B>(
-  imagebase: u64,
-  text: LinkSection<A>,
-  rdata: Option<LinkSection<B>>,
-) -> Result<(), CoFFRError>
-where
-  A: Iterator<Item = Result<ResolvedRelocation, CoFFRError>>,
-  B: Iterator<Item = Result<ResolvedRelocation, CoFFRError>>,
-{
-  unsafe {
-    link(imagebase, text)?;
+pub(crate) struct Arm64Relocator;
+const ARM64_TRAMPOLINE_TEMPLATE: [u8; 16] = [
+  0x50, 0x00, 0x00, 0x58, // ldr x16, #8
+  0x1F, 0x02, 0x1F, 0xD6, // br  x16
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Target (offset 8..16)
+];
 
-    if let Some(rdata) = rdata {
-      link(imagebase, rdata)?;
+impl COFFRRelocator for Arm64Relocator {
+  fn relocate(&self, imagebase: u64, section: LinkSection) -> Result<(), CoFFRError> {
+    unsafe {
+      link(imagebase, section)?;
+
+      Ok(())
+    }
+  }
+
+  unsafe fn count_trampolines(
+    &self,
+    section: CheckLinkSection,
+  ) -> Result<(u32, &'static [u8]), CoFFRError> {
+    let mut count = 0u32;
+
+    let view = section.view;
+    for relocation in section.reloc {
+      let relocation = relocation?;
+      let s = match relocation.symbol {
+        Resolved::Absolute(symb) => symb as i64,
+        _ => continue,
+      };
+      let p = view.data.rx.addr() as i64 + relocation.position_offset as i64;
+
+      let p_rw = unsafe { view.data.rw.add(relocation.position_offset as _) };
+
+      unsafe {
+        match relocation.typ {
+          IMAGE_REL_ARM64_BRANCH26 => {
+            const BITS: u8 = 26;
+            const SIGNED: bool = true;
+            const OFFSET: u8 = 0;
+            const SHIFT: ShifterType = ShifterType::Shl(2);
+
+            let inst = ptr::read_unaligned(p_rw as *mut u32);
+
+            let (a, _inst, _) = extract::<SIGNED, BITS>(inst, OFFSET, SHIFT);
+            let dt = (s + a - p) >> 2;
+
+            match within_bits::<SIGNED, BITS>(dt) {
+              Err(_) => {
+                count += 1;
+              }
+              _ => continue,
+            }
+          }
+
+          _ => continue,
+        }
+      }
     }
 
-    Ok(())
+    Ok((count, &ARM64_TRAMPOLINE_TEMPLATE))
   }
 }
 
-unsafe fn link<A>(base: u64, section: LinkSection<A>) -> Result<(), CoFFRError>
-where
-  A: Iterator<Item = Result<ResolvedRelocation, CoFFRError>>,
-{
+unsafe fn link(base: u64, section: LinkSection) -> Result<(), CoFFRError> {
   let view = section.view;
 
   let b = base as i64;
@@ -45,10 +85,11 @@ where
 
     let s_idx = relocation.sectidx;
     let s = relocation.symbol as i64;
-    let p = view.rx_ptr.addr() as i64 + relocation.position_offset as i64;
+    let p = view.data.rx.addr() as i64 + relocation.position_offset as i64;
 
-    let p_rw = unsafe { view.rw_ptr.add(relocation.position_offset as _) };
+    let p_rw = unsafe { view.data.rw.add(relocation.position_offset as _) };
 
+    let mut trampoline = 0;
     unsafe {
       match relocation.typ {
         IMAGE_REL_ARM64_ABSOLUTE => continue,
@@ -91,8 +132,33 @@ where
           let inst = ptr::read_unaligned(p_rw as *mut u32);
 
           let (a, inst, _) = extract::<SIGNED, BITS>(inst, OFFSET, SHIFT);
-          let dt = (s + a - p) >> 2;
-          within_bits::<SIGNED, BITS>(dt)?;
+          let mut dt = (s + a - p) >> 2;
+          debug_assert_eq!((s + a - p) & 3, 0);
+
+          within_bits::<SIGNED, BITS>(dt).map_or_else(
+            |_| {
+              let write = section
+                .view
+                .trampoline
+                .rw
+                .byte_add(trampoline * ARM64_TRAMPOLINE_TEMPLATE.len() + 8);
+              ptr::write_unaligned(write as *mut u64, (s + a) as u64);
+
+              let s = section
+                .view
+                .trampoline
+                .rx
+                .byte_add(trampoline * ARM64_TRAMPOLINE_TEMPLATE.len())
+                .addr() as i64;
+              dt = (s - p) >> 2;
+              debug_assert_eq!((s - p) & 3, 0);
+
+              trampoline += 1;
+
+              within_bits::<SIGNED, BITS>(dt)
+            },
+            |x| Ok(x),
+          )?;
 
           ptr::write_unaligned(p_rw as *mut u32, compact::<BITS>(inst, dt, OFFSET));
         }

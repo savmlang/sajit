@@ -1,7 +1,5 @@
-#[cfg(windows)]
-mod windows;
-
 use std::{borrow::Borrow, iter::once, num::NonZeroU8, sync::atomic::AtomicUsize};
+
 #[cfg(feature = "llvm")]
 use std::{borrow::Cow, collections::HashMap, num::NonZeroU64};
 
@@ -10,6 +8,9 @@ pub mod llvm;
 
 #[cfg(feature = "llvm")]
 pub mod symbpool;
+
+#[cfg(windows)]
+mod windows;
 
 #[cfg(windows)]
 pub use windows::*;
@@ -25,6 +26,8 @@ mod macos;
 
 #[cfg(target_os = "macos")]
 pub use macos::*;
+
+pub mod transaction;
 
 use crate::{
   Executable,
@@ -63,7 +66,7 @@ pub trait MemoryExecutableApi: Sized {
   /// of the total size with the final size [`capped_size`] field would provide.
   ///
   /// It is ONLY safe if [`capped_size`] <= size([`data`])
-  unsafe fn write_fn_iterated<'a, T, E, R, B>(
+  unsafe fn write_fn_iterated<'a, const INC: bool, const WRITE: bool, T, E, R, B>(
     &mut self,
     alignment: usize,
     capped_size: usize,
@@ -88,7 +91,15 @@ pub trait MemoryExecutableApi: Sized {
     relocs: &[Relocation],
     relcar: &Relcar<B>,
   ) -> WriteFnResult {
-    unsafe { self.write_fn_iterated(16, data.len(), once(data), relocs.iter(), relcar) }
+    unsafe {
+      self.write_fn_iterated::<true, true, _, _, _, B>(
+        16,
+        data.len(),
+        once(data),
+        relocs.iter(),
+        relcar,
+      )
+    }
   }
 
   /// Makes that the FID can now be safely freed!
@@ -212,21 +223,11 @@ pub trait LLVMDryRun: MemoryExecutableApi {
 pub trait LLVMJITLink: MemoryExecutableApi {
   fn write_jitlink<T>(
     &mut self,
+    total: usize,
     symbolpool: &symbpool::LLVMSymbolPool,
     object: &[u8],
     resolver: T,
   ) -> Result<HashMap<Box<str>, *const Executable>, Cow<'static, [Cow<'static, str>]>>
-  where
-    T: FnMut(*const str) -> usize;
-}
-
-#[cfg(feature = "llvm")]
-pub trait LLVMRTDyld: MemoryExecutableApi {
-  fn write_rtdyld<T>(
-    &mut self,
-    object: &[u8],
-    resolver: T,
-  ) -> Result<HashMap<Box<str>, *const Executable>, ()>
   where
     T: FnMut(*const str) -> usize;
 }

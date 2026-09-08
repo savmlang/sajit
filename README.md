@@ -6,7 +6,7 @@
 
 **SaJIT** is an Executable Region allocator and linker written in Rust with an extended ObjectFile linker in C++20
 
-It offers a MemoryExecutable interface with a homegrown linker in Rust. However, for object files (like what LLVM outputs) we have 2 linkers in C++ (JITLinker, RuntimeDyld) that require C++20 under the `llvm` feature.
+It offers a MemoryExecutable interface with a homegrown linker in Rust. However, for object files (like what LLVM outputs) we have a linkers in C++ (JITLink) that require C++20 under the `llvm` feature.
 
 We support the following executable api:
 
@@ -17,32 +17,29 @@ We support the following executable api:
 <details>
   <summary>Click here to expand</summary>
 
-| Operating System | Arch        | Status  | Notes                                                                                                      |
-| ---------------- | ----------- | ------- | ---------------------------------------------------------------------------------------------------------- |
-| Windows          | x86_64      | ✅ (🥇) |                                                                                                            |
-|                  | x86         | ❌ (🟨) | Only COFFR support                                                                                         |
-|                  | arm64       | ✅ (🟨) | RELCAR support good, no JITLink and minimal RTDyld                                                         |
-| Linux            | x86_64      | ✅ (🥇) |                                                                                                            |
-|                  | x86         | 🟨      | Testing infrastructure welcome                                                                             |
-|                  | arm64       | ✅      |                                                                                                            |
-|                  | armv7       | ✅      | Testing infrastructure welcome                                                                             |
-|                  | riscv64     | ✅      |                                                                                                            |
-|                  | riscv32     | 🏗️      | Testing infrastructure welcome                                                                             |
-|                  | loongarch64 | 🏗️      | TODO: Build LLVM loongarch64 [llvm](https://github.com/savmlang/llvm/blob/main/.github/workflows/llvm.yml) |
-|                  | powerpc64le | ✅      | Testing infrastructure welcome                                                                             |
-|                  | mips64el    | 🏗️      | Testing infrastructure welcome                                                                             |
-| macOS            |             |         | Gatekeeper might block JIT. Be advised                                                                     |
-|                  | x86_64      | ✅      |                                                                                                            |
-|                  | arm64       | ✅      |                                                                                                            |
-| Android          | x86_64      | ❌      | Android has unintended friction                                                                            |
-|                  | x86         | ❌      | towards memory mapped code due to                                                                          |
-|                  | armv7       | ❌      | security reasons.                                                                                          |
-|                  | arm64       | ❌      |                                                                                                            |
-| iOS              | arm64       | ❌      | Experimental, Hacky, not worth it.                                                                         |
+| Operating System | Arch        | Status   | Notes                                  |
+| ---------------- | ----------- | -------- | -------------------------------------- |
+| Windows          | x86_64      | ✅ (🥇)  | COFFR & JITLink                        |
+|                  | x86         | 🟨       | COFFR Support                          |
+|                  | arm64       | ✅       | COFFR Support                          |
+| Linux            | x86_64      | ✅ (🥇)  |                                        |
+|                  | x86         | 🟨       |                                        |
+|                  | arm64       | ✅       |                                        |
+|                  | armv7       | 🟨       | QEMU Testing successful                |
+|                  | riscv64     | 🟨       | QEMU Testing successful                |
+|                  | powerpc64le | 🟨       | QEMU Testing successful                |
+| macOS            |             |          | Gatekeeper might block JIT. Be advised |
+|                  | x86_64      | ✅ (🏗️!) | Testing no longer done                 |
+|                  | arm64       | ✅       |                                        |
+| Android          | x86_64      | ❌       | Android has unintended friction        |
+|                  | x86         | ❌       | towards memory mapped code due to      |
+|                  | armv7       | ❌       | security reasons.                      |
+|                  | arm64       | ❌       |                                        |
+| iOS              | arm64       | ❌       | Experimental, Hacky, not worth it.     |
 
 🥇: Maintainer Environment
 ✅: Supported
-🟨: Tests Pending
+🟨: Hardware Tests Pending
 🏗️: Hacky
 ❌: Unlikely to be supported
 
@@ -50,26 +47,24 @@ We support the following executable api:
 
 ## 🔗 Linker Platform Matrix
 
-The below table should be a good heuristic about support (JITLink and RuntimeDyld may be incorrect. Consult LLVM)
+The below table should be a good heuristic about support (JITLink matrix may be incorrect. Consult LLVM)
 
-| Operating System | Arch        | [RELCAR \*](#-sajit-relcar) | [COFFR \*](#-sajit-coffr) | [JITLink \*](#-llvm-jitlink) | [RuntimeDyld \*](#-llvm-runtimedyld) |
-| ---------------- | ----------- | --------------------------- | ------------------------- | ---------------------------- | ------------------------------------ |
-| Windows          | x86_64      | ✅                          | ❌                        | ✅                           | ✅                                   |
-|                  | x86         | 🟨                          | ✅                        | ❌                           | 🟨                                   |
-|                  | arm64       | ✅                          | ❌                        | ❌                           | ✅                                   |
-| Linux            | x86_64      | ✅                          | ❌                        | ✅                           | ✅                                   |
-|                  | x86         | 🟨                          | ❌                        | ✅                           | ✅                                   |
-|                  | arm64       | ✅                          | ❌                        | ✅                           | ✅                                   |
-|                  | armv7       | 🟨                          | ❌                        | ✅                           | ✅                                   |
-|                  | riscv64     | ✅                          | ❌                        | ✅                           | ✅                                   |
-|                  | riscv32     | ❌                          | ❌                        | ❌                           | 🟨                                   |
-|                  | loongarch64 | ❌                          | ❌                        | ❌                           | ??                                   |
-|                  | powerpc64le | ❌                          | ❌                        | ✅                           | ✅                                   |
-|                  | mips64el    | ❌                          | ❌                        | ❌                           | ✅                                   |
-| macOS            | x86_64      | ✅                          | ❌                        | ✅                           | ✅                                   |
-|                  | arm64       | ✅                          | ❌                        | ✅                           | ✅                                   |
+| Operating System | Arch        | [RELCAR \*](#-sajit-relcar) | [COFFR \*](#-sajit-coffr) | [JITLink \*](#-llvm-jitlink) |
+| ---------------- | ----------- | --------------------------- | ------------------------- | ---------------------------- |
+| Windows          | x86_64      | 🟦                          | ✅                        | 🟨                           |
+|                  | x86         | 🟨                          | ✅                        | ❌                           |
+|                  | arm64       | 🟦                          | ✅                        | ❌                           |
+| Linux            | x86_64      | 🟦                          | ❌                        | ✅                           |
+|                  | x86         | 🟨                          | ❌                        | ✅                           |
+|                  | arm64       | 🟦                          | ❌                        | ✅                           |
+|                  | armv7       | 🟨                          | ❌                        | ✅                           |
+|                  | riscv64     | 🟦                          | ❌                        | ✅                           |
+|                  | powerpc64le | ❌                          | ❌                        | ✅                           |
+| macOS            | x86_64      | 🟦                          | ❌                        | ✅                           |
+|                  | arm64       | 🟦                          | ❌                        | ✅                           |
 
 ✅: Supported
+🟦: Basic Only
 🟨: Limbo - prefer others
 **??**: Unknown
 ❌: Not Supported
@@ -83,7 +78,6 @@ Available relocators :
 - SaJIT RELCAR (Rust)
 - SaJIT COFFR (Rust)
 - LLVM JITLink (C++)
-- LLVM RuntimeDyld (C++)
 
 ## 🔨 SaJIT RELCAR
 
@@ -104,43 +98,39 @@ SaJIT _RELCAR_ is an extensible relocator and the default **BasicRelocator** sho
 
 ### 🪟 SaJIT COFFR
 
-This a relocator only for parsing PE/COFF objects and is **ONLY** intended for i386 where all the LLVM Alternatives spectacularly fail.
-This is a heavily minimal COFF parser and relocator for only **i386** windows
-
-Some parts from : [coffeldr](https://github.com/joaoviictorti/coffeeldr) are explicitly tagged with their APACHE license
+This a relocator for patching PE/COFF objects following the specularly bad support for LLVM Linkers (both RuntimeDyld and JITLink)
 
 ### 📍 Implementations
 
-| Name                 | Note             | Range |
-| :------------------- | ---------------- | ----- |
-| IMAGE_REL_I386_DIR32 | 🏗️ Tests Pending | FULL  |
-| IMAGE_REL_I386_REL32 | 🏗️ Tests Pending | FULL  |
+_TBD_
+
+> **Note:** Relocations exceeding hardware limits (limited to x64 `REL32` outside ±2GiB, arm64 `BRANCH26` outside ±128MiB) automatically synthesize deduplicated stubs inside the slab-local trampoline pool.
 
 ## 🔗 LLVM JITLink
 
 We have a C++ mapping of LLVM JITLink to support advanced relocations and linking. This is exposed by the `LLVMJITLink` trait. This is the recommended linker for production projects.
 
+> [!WARNING]
+> **Integration Stability:** The current C++/Rust bridging layer for JITLink is under active refinement. Memory manager callbacks and asynchronous symbol resolution across the FFI boundary are somewhat brittle. A deeper, idiomatic integration with SaJIT's native slab allocator is planned as an incremental update. Issue reports and edge-case reproductions are welcome!
+
 **Platform Support:** [LLVM JITLink](https://llvm.org/docs/JITLink.html#jitlink-availability-and-feature-status)
 
 ## 📖 LLVM RuntimeDyld
 
-We also offer a C++ mapping of LLVM RuntimeDyld as a relocator and linker. This is exposed by the `LLVMRTDyld` trait. This is only recommended as a fallback for `LLVMJITLink`.
+> RuntimeDyld was previously shipped as a SaJIT Linker. Following the development of **COFFR**, this has been removed to streamline development and reduce vulnerability surface across C++/Rust
 
-Supported in both **JITLink** and **RuntimeDyld**:
+<details>
+  <summary>Why removal?</summary>
 
-| Format | Arch                                                    |
-| ------ | ------------------------------------------------------- |
-| COFF   | x86-64                                                  |
-| ELF    | aarch32, aarch64, i386, LoongArch, PPC64, RISCV, x86-64 |
-| MachO  | aarch64, x86-64                                         |
+The primary reasons are as follows:
 
-Supported only in **RuntimeDyld**:
-
-| Format | Arch                   |
-| ------ | ---------------------- |
-| COFF   | aarch32, aarch64, i386 |
-| ELF    | MIPS, PPC32, SPARC     |
-| MachO  | aarch32, i386          |
+1. **Fatal Aborts:** The linker had a tendency to call unrecoverable fatal error/abort branches (`report_fatal_error`) rather than returning catchable errors.
+2. **Ungraceful OOM Handling:** The linker did not handle allocation exhaustion gracefully, complicating memory bounds enforcement.
+3. **Unpredictable Memory Footprint:** No reliable way existed to pre-calculate or bound the maximum memory footprint needed for a given module.
+4. **Fragile Windows/COFF Support:** COFF support in RuntimeDyld was historically neglected and brittle; COFFR now provides native, deterministic handling.
+5. **Non-standard Trampolines:** Out-of-range branch stubbing was non-standard and prone to relocation reach failures on 64-bit platforms.
+6. **Modern Upstream Focus:** Upstream LLVM has deprecated RuntimeDyld in favor of JITLink, which already serves as SaVM’s primary object-linking engine on non-Windows platforms.
+</details>
 
 ## 🏗️ Maintainer's Choice
 
@@ -150,6 +140,5 @@ Maintainer [@ahqsoftwares](https://github.com/ahqsoftwares) believes the followi
 ```
 Cranelift (X64, Arm64, Riscv64 ABSOLUTE) = RELCAR
 Object File (X64 ELF/MachO, Arm64 ELF/MachO) = JITLink
-Object File (X64 COFF, Arm64 COFF) = RuntimeDyld
-Object File (I386 COFF) = COFFR [🫕 THE ONLY TARGET COFFR HAS]
+Object File (COFF) = COFFR
 ```
