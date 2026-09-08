@@ -1,6 +1,5 @@
-> Please note that this readme is not AI generated.
->
-> The emojis are for better navigation purposes only.
+> [!NOTE]
+> Please note that this readme is not AI generated. The emojis are for better navigation purposes only.
 
 # SaJIT
 

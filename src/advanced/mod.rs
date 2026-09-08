@@ -4,9 +4,11 @@ use std::{borrow::Borrow, iter::once, num::NonZeroU8, sync::atomic::AtomicUsize}
 use std::{borrow::Cow, collections::HashMap, num::NonZeroU64};
 
 #[cfg(feature = "llvm")]
+#[cfg_attr(docsrs, doc(cfg(feature = "llvm")))]
 pub mod llvm;
 
 #[cfg(feature = "llvm")]
+#[cfg_attr(docsrs, doc(cfg(feature = "llvm")))]
 pub mod symbpool;
 
 #[cfg(windows)]
@@ -209,6 +211,7 @@ impl MemorySizeInfo for MemoryExecutable {
 }
 
 #[cfg(feature = "llvm")]
+#[cfg_attr(docsrs, doc(cfg(feature = "llvm")))]
 pub trait LLVMDryRun: MemoryExecutableApi {
   /// Returns an approximated best-effort size (atmost size)
   /// by parsing the objectfile
@@ -220,6 +223,7 @@ pub trait LLVMDryRun: MemoryExecutableApi {
 }
 
 #[cfg(feature = "llvm")]
+#[cfg_attr(docsrs, doc(cfg(feature = "llvm")))]
 pub trait LLVMJITLink: MemoryExecutableApi {
   fn write_jitlink<T>(
     &mut self,

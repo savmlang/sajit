@@ -1,3 +1,5 @@
+#![cfg_attr(docsrs, feature(doc_cfg))]
+
 //! SaJIT Loader
 //!
 //! SaJIT is a handwritten cross-platform cross-architecture hand rolled loader

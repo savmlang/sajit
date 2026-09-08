@@ -1,6 +1,7 @@
 //! Relocation Primitives
 
 #[cfg(feature = "llvm")]
+#[cfg_attr(docsrs, doc(cfg(feature = "llvm")))]
 pub(crate) mod llvmreloc;
 
 #[repr(C)]

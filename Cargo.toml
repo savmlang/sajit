@@ -1,6 +1,6 @@
 [package]
 name = "sajit"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2024"
 license = "Apache-2.0"
 rust-version = "1.95"
@@ -33,3 +33,14 @@ cranelift = { version = "^0.135", features = ["native"] }
 
 [features]
 llvm = ["dep:cc", "dep:bindgen"]
+
+[package.metadata.docs.rs]
+targets = [
+  "x86_64-unknown-linux-gnu",
+  "x86_64-apple-darwin",
+  "x86_64-pc-windows-msvc",
+
+  "aarch64-unknown-linux-gnu",
+  "aarch64-apple-darwin",
+  "aarch64-pc-windows-msvc",
+]
