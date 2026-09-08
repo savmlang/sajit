@@ -6,7 +6,7 @@
 
 **SaJIT** is an Executable Region allocator and linker written in Rust with an extended ObjectFile linker in C++20
 
-It offers a MemoryExecutable interface with a homegrown linker in Rust. However, for object files (like what LLVM outputs) we have a linkers in C++ (JITLink) that require C++20 under the `llvm` feature.
+It offers a MemoryExecutable interface with a homegrown linker in Rust. However, for object files (like what LLVM outputs) we have a linker in C++ (JITLink) that requires C++20 and the `llvm` feature.
 
 We support the following executable api:
 
@@ -40,7 +40,7 @@ We support the following executable api:
 🥇: Maintainer Environment
 ✅: Supported
 🟨: Hardware Tests Pending
-🏗️: Hacky
+🏗️: Dropped
 ❌: Unlikely to be supported
 
 </details>
@@ -49,24 +49,24 @@ We support the following executable api:
 
 The below table should be a good heuristic about support (JITLink matrix may be incorrect. Consult LLVM)
 
-| Operating System | Arch        | [RELCAR \*](#-sajit-relcar) | [COFFR \*](#-sajit-coffr) | [JITLink \*](#-llvm-jitlink) |
-| ---------------- | ----------- | --------------------------- | ------------------------- | ---------------------------- |
-| Windows          | x86_64      | 🟦                          | ✅                        | 🟨                           |
-|                  | x86         | 🟨                          | ✅                        | ❌                           |
-|                  | arm64       | 🟦                          | ✅                        | ❌                           |
-| Linux            | x86_64      | 🟦                          | ❌                        | ✅                           |
-|                  | x86         | 🟨                          | ❌                        | ✅                           |
-|                  | arm64       | 🟦                          | ❌                        | ✅                           |
-|                  | armv7       | 🟨                          | ❌                        | ✅                           |
-|                  | riscv64     | 🟦                          | ❌                        | ✅                           |
-|                  | powerpc64le | ❌                          | ❌                        | ✅                           |
-| macOS            | x86_64      | 🟦                          | ❌                        | ✅                           |
-|                  | arm64       | 🟦                          | ❌                        | ✅                           |
+| Operating System | Arch         | [RELCAR \*](#-sajit-relcar) | [COFFR \*](#-sajit-coffr) | [JITLink \*](#-llvm-jitlink) |
+| ---------------- | ------------ | --------------------------- | ------------------------- | ---------------------------- |
+| Windows          | x86_64       | 🟦                          | ✅                        | 🟨                           |
+|                  | x86          | 🟦                          | ✅                        | ❌                           |
+|                  | arm64        | 🟦                          | ✅                        | ❌                           |
+| Linux            | x86_64       | 🟦                          | ❌                        | ✅                           |
+|                  | x86          | 🟦                          | ❌                        | 🟨                           |
+|                  | arm64        | 🟦                          | ❌                        | ✅                           |
+|                  | armv7        | 🟦                          | ❌                        | 🟨                           |
+|                  | riscv64      | 🟦                          | ❌                        | ✅                           |
+|                  | powerpc64le  | 🟦                          | ❌                        | ✅                           |
+| macOS            | x86_64 (🏗️!) | 🟦                          | ❌                        | ✅                           |
+|                  | arm64        | 🟦                          | ❌                        | ✅                           |
 
 ✅: Supported
-🟦: Basic Only
-🟨: Limbo - prefer others
-**??**: Unknown
+🟨: Average Support
+🟦: Elementary Support
+🏗️: Unlisting soon
 ❌: Not Supported
 
 - **RELCAR** cannot process ObjectFiles
@@ -98,11 +98,49 @@ SaJIT _RELCAR_ is an extensible relocator and the default **BasicRelocator** sho
 
 ### 🪟 SaJIT COFFR
 
-This a relocator for patching PE/COFF objects following the specularly bad support for LLVM Linkers (both RuntimeDyld and JITLink)
+This is a relocator for patching PE/COFF objects written following the spectacularly bad support for LLVM Linkers (both RuntimeDyld and JITLink) on Windows/PE/COFF
 
 ### 📍 Implementations
 
-_TBD_
+#### I386
+
+1. IMAGE_REL_I386_ABSOLUTE
+2. IMAGE_REL_I386_DIR32
+3. IMAGE_REL_I386_DIR32NB
+4. IMAGE_REL_I386_REL32
+5. IMAGE_REL_I386_SECREL
+6. IMAGE_REL_I386_SECTION
+
+#### X64
+
+1. IMAGE_REL_AMD64_ABSOLUTE
+2. IMAGE_REL_AMD64_ADDR32
+3. IMAGE_REL_AMD64_ADDR32NB
+4. IMAGE_REL_AMD64_ADDR64
+5. IMAGE_REL_AMD64_REL32 (trampolines supported)
+6. IMAGE_REL_AMD64_REL32_1
+7. IMAGE_REL_AMD64_REL32_2
+8. IMAGE_REL_AMD64_REL32_3
+9. IMAGE_REL_AMD64_REL32_4
+10. IMAGE_REL_AMD64_REL32_5
+11. IMAGE_REL_AMD64_SECREL
+12. IMAGE_REL_AMD64_SECTION
+
+#### ARM64
+
+1. IMAGE_REL_ARM64_ABSOLUTE
+2. IMAGE_REL_ARM64_ADDR32
+3. IMAGE_REL_ARM64_ADDR32NB
+4. IMAGE_REL_ARM64_ADDR64
+5. IMAGE_REL_ARM64_BRANCH14
+6. IMAGE_REL_ARM64_BRANCH19
+7. IMAGE_REL_ARM64_BRANCH26 (trampolines supported)
+8. IMAGE_REL_ARM64_PAGEBASE_REL21
+9. IMAGE_REL_ARM64_PAGEOFFSET_12A
+10. IMAGE_REL_ARM64_PAGEOFFSET_12L
+11. IMAGE_REL_ARM64_REL21
+12. IMAGE_REL_ARM64_REL32
+13. IMAGE_REL_ARM64_SECTION
 
 > **Note:** Relocations exceeding hardware limits (limited to x64 `REL32` outside ±2GiB, arm64 `BRANCH26` outside ±128MiB) automatically synthesize deduplicated stubs inside the slab-local trampoline pool.
 
@@ -117,7 +155,7 @@ We have a C++ mapping of LLVM JITLink to support advanced relocations and linkin
 
 ## 📖 LLVM RuntimeDyld
 
-> RuntimeDyld was previously shipped as a SaJIT Linker. Following the development of **COFFR**, this has been removed to streamline development and reduce vulnerability surface across C++/Rust
+> RuntimeDyld was previously shipped as a SaJIT Linker. Following the development of **COFFR**, this has been removed to streamline development and reduce the vulnerability surface across C++/Rust interop.
 
 <details>
   <summary>Why removal?</summary>
@@ -139,6 +177,6 @@ Maintainer [@ahqsoftwares](https://github.com/ahqsoftwares) believes the followi
 
 ```
 Cranelift (X64, Arm64, Riscv64 ABSOLUTE) = RELCAR
-Object File (X64 ELF/MachO, Arm64 ELF/MachO) = JITLink
+Object File (ELF, MachO) = JITLink
 Object File (COFF) = COFFR
 ```

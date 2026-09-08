@@ -9,12 +9,17 @@
 //! It fundamentally deviates from the general norm into high performance computing
 //! and uses file-backed pages on platforms like windows
 
+/// The COFFR Linker
 pub mod coffr;
 
+/// Memory Executable & other advanced apis
 pub mod advanced;
+
+/// Platform specific mechanics
 pub mod platform;
 pub mod relcar;
 
+/// Core types surrounding relocations
 pub mod relocations;
 
 pub use advanced::*;
@@ -31,8 +36,7 @@ pub use advanced::*;
 /// executable.
 ///
 /// Casting a `*const Executable` as `*mut Executable`
-/// is guaranteed undefined behaviour that no CPU would like
-/// and would result in memory access violation, or even worse,
-/// crash with the OS.
+/// is guaranteed undefined behaviour that would result 
+/// in memory access violation.
 #[repr(C)]
 pub struct Executable;

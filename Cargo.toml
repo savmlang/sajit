@@ -1,9 +1,13 @@
 [package]
 name = "sajit"
-description = "Good Enough JIT Code Slab Allocator, Relocator, Linker interface"
 version = "0.0.1"
 edition = "2024"
+license = "Apache-2.0"
 rust-version = "1.95"
+
+description = "Good Enough JIT Code Slab Allocator, Relocator, Linker interface"
+homepage = "https://github.com/savmlang/sajit"
+repository = "https://github.com/savmlang/sajit.git"
 
 [dependencies]
 libc = "^0.2"
@@ -21,17 +25,17 @@ windows = { version = "^0.62", features = [
 ] }
 
 [build-dependencies]
-# bindgen = { version = "^0.72", optional = true }
+bindgen = { version = "^0.73", optional = true }
 # Generally that is 0.72.1 plus some recent changes -- but the one thing that
 # matters over 0.72.1 is that it merges
 # <https://github.com/rust-lang/rust-bindgen/pull/2403> to fix
 # <https://github.com/rust-lang/rust-bindgen/issues/2991>, which affects only
 # native32.
-bindgen = { git = "https://github.com/chrysn-pull-requests/rust-bindgen", branch = "extended-floats", optional = true }
+# bindgen = { git = "https://github.com/chrysn-pull-requests/rust-bindgen", branch = "extended-floats", optional = true }
 cc = { version = "^1", optional = true }
 
 [dev-dependencies]
-cranelift = { version = "^0.134", features = ["native"] }
+cranelift = { version = "^0.135", features = ["native"] }
 
 [features]
 llvm = ["dep:cc", "dep:bindgen"]
