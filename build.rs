@@ -93,6 +93,7 @@ fn jitlink_llvm() {
 
   build
     .cpp(true)
+    .warnings(false)
     .std("c++20")
     .file("./jitlinkc++/jitlink.cpp")
     .file("./jitlinkc++/objcalc.cpp")

@@ -10,8 +10,10 @@ homepage = "https://github.com/savmlang/sajit"
 repository = "https://github.com/savmlang/sajit.git"
 
 [dependencies]
-libc = "^0.2"
 object = "^0.40"
+
+[target.'cfg(unix)'.dependencies]
+libc = "^0.2"
 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "^0.62", features = [
