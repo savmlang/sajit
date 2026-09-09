@@ -87,26 +87,28 @@ fn jitlink_llvm() {
     .write_to_file(out_path.join("bindings.rs"))
     .expect("Couldn't write bindings!");
 
-  let include_llvm = llvm_config(&["--includedir"]);
+  if !std::env::var("DOCS_RS").is_ok() {
+    let include_llvm = llvm_config(&["--includedir"]);
 
-  let mut build = Build::new();
+    let mut build = Build::new();
 
-  build
-    .cpp(true)
-    .warnings(false)
-    .std("c++20")
-    .file("./jitlinkc++/jitlink.cpp")
-    .file("./jitlinkc++/objcalc.cpp")
-    .include("jitlinkc++")
-    .include(include_llvm.trim());
+    build
+      .cpp(true)
+      .warnings(false)
+      .std("c++20")
+      .file("./jitlinkc++/jitlink.cpp")
+      .file("./jitlinkc++/objcalc.cpp")
+      .include("jitlinkc++")
+      .include(include_llvm.trim());
 
-  let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
 
-  if target_os == "linux" || target_os == "darwin" || target_os == "macos" {
-    build.flag("-fno-rtti");
+    if target_os == "linux" || target_os == "darwin" || target_os == "macos" {
+      build.flag("-fno-rtti");
+    }
+
+    build.compile("sajitlink");
   }
-
-  build.compile("sajitlink");
 }
 
 #[rustfmt::skip]
