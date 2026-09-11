@@ -1,6 +1,3 @@
-> [!NOTE]
-> Please note that this readme is not AI generated. The emojis are for better navigation purposes only.
-
 # SaJIT
 
 **_A part of the SaVM Project_**

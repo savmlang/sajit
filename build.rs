@@ -97,7 +97,6 @@ fn jitlink_llvm() {
       .warnings(false)
       .std("c++20")
       .file("./jitlinkc++/jitlink.cpp")
-      .file("./jitlinkc++/objcalc.cpp")
       .include("jitlinkc++")
       .include(include_llvm.trim());
 

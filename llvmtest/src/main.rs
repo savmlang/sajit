@@ -10,7 +10,7 @@ use inkwell::{AddressSpace, OptimizationLevel};
 use sajit::relcar::RELCAR_BASIC;
 use sajit::symbpool::LLVMSymbolPool;
 use sajit::{
-  LLVMDryRun, LLVMJITLink, MemoryExecutable, MemoryExecutableApi, MemorySizeInfo, WriteFnResult,
+  LLVMJITLink, MemoryExecutable, MemoryExecutableApi, ObjectFileSizeCalc, SizeCheck, WriteFnResult,
 };
 
 fn main() {
@@ -26,7 +26,19 @@ fn main() {
   };
 
   let o = exec.cursor();
-  let est = MemoryExecutable::sizecalc_jitlink(&symbpool, &object);
+  let est = MemoryExecutable::sizecalc(&object, |dt| {
+    let vals = dt.collect::<Vec<_>>();
+
+    let is_ok = exec.under_size_adv(vals.iter()).unwrap();
+    assert!(is_ok);
+    println!("Acceptable Sizes");
+
+    vals
+      .iter()
+      .map(|x| x.size + x.align.saturating_sub(1))
+      .sum::<usize>()
+  })
+  .unwrap();
   let hmap = exec
     .write_jitlink(1, &symbpool, &object, |loc| {
       unsafe {
@@ -37,7 +49,8 @@ fn main() {
     .unwrap();
   let written = exec.cursor().sub(o);
 
-  println!("Estimated : {est:?}, Found : {written}");
+  println!("Estimated : {est:?}, Written : {written}");
+  assert!(est >= written);
 
   println!("{hmap:?}");
   unsafe {

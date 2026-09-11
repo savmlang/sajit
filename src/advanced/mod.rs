@@ -1,7 +1,7 @@
 use std::{borrow::Borrow, iter::once, num::NonZeroU8, sync::atomic::AtomicUsize};
 
 #[cfg(feature = "llvm")]
-use std::{borrow::Cow, collections::HashMap, num::NonZeroU64};
+use std::{borrow::Cow, collections::HashMap};
 
 #[cfg(feature = "llvm")]
 #[cfg_attr(docsrs, doc(cfg(feature = "llvm")))]
@@ -29,6 +29,7 @@ mod macos;
 #[cfg(target_os = "macos")]
 pub use macos::*;
 
+pub mod sizecalc;
 pub mod transaction;
 
 use crate::{
@@ -137,12 +138,22 @@ pub trait SizeCheck: MemoryExecutableApi {
   }
 
   /// Does the MemoryExecutable have enough size
-  fn under_size_adv<T>(&self, size_align: T) -> Option<bool>
+  fn under_size_adv<E, T>(&self, size_align: T) -> Option<bool>
   where
-    T: Iterator<Item = SizeAlign>;
+    T: Iterator<Item = E>,
+    E: Borrow<SizeAlign>;
 
   /// Gets the base RX address
   fn base_address(&self) -> usize;
+
+  /// Gets the total size of the Slab
+  fn size(&self) -> usize;
+
+  /// Gets the current cursor position of the slab
+  fn cursor(&self) -> usize;
+
+  /// Gets the cursor position after offseting it to align
+  fn next_cursor(&self, align: usize) -> Option<usize>;
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -152,9 +163,10 @@ pub struct SizeAlign {
 }
 
 impl SizeCheck for MemoryExecutable {
-  fn under_size_adv<T>(&self, size_align: T) -> Option<bool>
+  fn under_size_adv<E, T>(&self, size_align: T) -> Option<bool>
   where
-    T: Iterator<Item = SizeAlign>,
+    T: Iterator<Item = E>,
+    E: Borrow<SizeAlign>,
   {
     let base = (self.rxview as *const u8).addr().checked_add(self.cursor)?;
 
@@ -163,7 +175,7 @@ impl SizeCheck for MemoryExecutable {
 
     // Iterate & Check Overflow
     for item in size_align {
-      let SizeAlign { size, align } = item;
+      let SizeAlign { size, align } = *item.borrow();
 
       // Ensure alignment is a non-zero power of two if required by your layout
       if !align.is_power_of_two() {
@@ -181,16 +193,7 @@ impl SizeCheck for MemoryExecutable {
   fn base_address(&self) -> usize {
     self.rxview.addr()
   }
-}
 
-pub trait MemorySizeInfo {
-  fn size(&self) -> usize;
-  fn cursor(&self) -> usize;
-
-  fn next_cursor(&self, align: usize) -> Option<usize>;
-}
-
-impl MemorySizeInfo for MemoryExecutable {
   fn cursor(&self) -> usize {
     self.cursor
   }
@@ -209,17 +212,12 @@ impl MemorySizeInfo for MemoryExecutable {
     (cursor < self.size).then_some(cursor)
   }
 }
-
-#[cfg(feature = "llvm")]
-#[cfg_attr(docsrs, doc(cfg(feature = "llvm")))]
-pub trait LLVMDryRun: MemoryExecutableApi {
-  /// Returns an approximated best-effort size (atmost size)
-  /// by parsing the objectfile
-  fn sizecalc(object: &[u8]) -> Option<NonZeroU64>;
-
-  /// Returns an much more accurate best-effort size (atmost size)
-  /// by parsing the objectfile
-  fn sizecalc_jitlink(symbolpool: &symbpool::LLVMSymbolPool, object: &[u8]) -> Option<NonZeroU64>;
+pub trait ObjectFileSizeCalc: MemoryExecutableApi {
+  /// Returns an approximated size requried
+  /// for an objectfile (maximum/conservative)
+  fn sizecalc<T, Out>(object: &[u8], adapter: T) -> Result<Out, object::Error>
+  where
+    T: FnOnce(&mut dyn Iterator<Item = SizeAlign>) -> Out;
 }
 
 #[cfg(feature = "llvm")]

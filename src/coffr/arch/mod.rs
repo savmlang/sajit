@@ -216,7 +216,6 @@ where
   Ok(symbols.map(move |x| {
     let binding = x?;
     let data = binding.borrow();
-
     Ok((data.name, symbolmap(&sectview, rxview, data.resolved)?.0))
   }))
 }

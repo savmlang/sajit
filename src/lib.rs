@@ -11,6 +11,8 @@
 //! It fundamentally deviates from the general norm into high performance computing
 //! and uses file-backed pages on platforms like windows
 
+mod memory;
+
 /// The COFFR Linker
 pub mod coffr;
 
@@ -26,6 +28,8 @@ pub mod relocations;
 
 pub use advanced::*;
 
+pub use memory::*;
+
 /// This is a wrapper structure
 ///
 /// This is literally meant to annotate outputs
@@ -38,7 +42,7 @@ pub use advanced::*;
 /// executable.
 ///
 /// Casting a `*const Executable` as `*mut Executable`
-/// is guaranteed undefined behaviour that would result 
+/// is guaranteed undefined behaviour that would result
 /// in memory access violation.
 #[repr(C)]
 pub struct Executable;
