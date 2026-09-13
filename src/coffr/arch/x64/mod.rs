@@ -42,6 +42,7 @@ impl COFFRRelocator for X64Relocator {
         Resolved::Absolute(dt) => dt as i64,
         _ => continue,
       };
+      let p = view.data.rx.addr() as i64 + relocation.position_offset as i64;
 
       let p_rw = unsafe { view.data.rw.add(relocation.position_offset as _) };
 
@@ -50,7 +51,7 @@ impl COFFRRelocator for X64Relocator {
           IMAGE_REL_AMD64_REL32 => {
             let a = ptr::read_unaligned(p_rw as *mut i32) as i64;
 
-            let patch = s + a;
+            let patch = (s + a) - (p + 4);
 
             if !(i32::MIN as i64..=i32::MAX as i64).contains(&patch) {
               count += 1;
