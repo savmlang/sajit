@@ -3,7 +3,7 @@ name = "sajit"
 version = "0.0.7"
 edition = "2024"
 license = "Apache-2.0"
-rust-version = "1.95"
+rust-version = "1.97"
 
 description = "Good Enough JIT Code Slab Allocator, Relocator, Linker interface"
 homepage = "https://github.com/savmlang/sajit"
