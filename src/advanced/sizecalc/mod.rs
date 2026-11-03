@@ -40,7 +40,7 @@ impl ObjectFileSizeCalc for MemoryExecutable {
             });
 
         std::iter::once(SizeAlign {
-          align: (x.align() as u64).max(stubsize.align),
+          align: (x.align() as usize).max(stubsize.align),
           size: x.compressed_data().unwrap().uncompressed_size as _,
         })
         .chain(relocs)
